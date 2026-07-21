@@ -15,18 +15,22 @@ export function ConnectionBanner({ state, latency }: ConnectionBannerProps) {
 
   return (
     <div
-      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium animate-scale-in ${
         state === ConnectionState.CONNECTED
-          ? "bg-primary/10 text-primary"
+          ? "bg-primary/10 text-primary ring-1 ring-primary/20"
           : state === ConnectionState.RECONNECTING
-            ? "bg-warning/10 text-warning"
-            : "bg-danger/10 text-danger"
+            ? "bg-warning/10 text-warning ring-1 ring-warning/20"
+            : state === ConnectionState.CONNECTING
+              ? "bg-secondary/10 text-secondary ring-1 ring-secondary/20"
+              : "bg-danger/10 text-danger ring-1 ring-danger/20"
       }`}
     >
-      <span className={`w-2 h-2 rounded-full ${info.dot}`} />
+      <span className={`w-2 h-2 rounded-full ${info.dot} ${
+        state === ConnectionState.CONNECTED ? "animate-ping-slow" : ""
+      }`} />
       {info.label}
       {latency !== null && state === ConnectionState.CONNECTED && (
-        <span className="opacity-70">{latency}ms</span>
+        <span className="opacity-60">({latency}ms)</span>
       )}
     </div>
   );

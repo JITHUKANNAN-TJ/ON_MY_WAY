@@ -8,60 +8,163 @@
   }
 
   body {
-    @apply antialiased;
+    @apply antialiased bg-background text-text;
   }
 
   * {
-    @apply border-white/10;
+    @apply border-white/[0.06];
+  }
+
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
   }
 }
 
 @layer components {
   .glass {
-    @apply bg-surface/80 backdrop-blur-xl border border-white/10 shadow-lg;
+    @apply bg-surface/60 backdrop-blur-xl border border-white/[0.04] shadow-card;
+  }
+
+  .glass-strong {
+    @apply bg-surface/80 backdrop-blur-xl border border-white/[0.06] shadow-card;
   }
 
   .btn-primary {
-    @apply bg-primary text-background font-semibold px-6 py-3 rounded-xl
-           hover:bg-primary/90 active:scale-[0.98]
+    @apply relative overflow-hidden bg-primary text-background font-semibold px-6 py-3 rounded-xl
+           hover:shadow-glow
+           active:scale-[0.97]
            transition-all duration-200 ease-out
            disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
   }
 
+  .btn-primary::after {
+    content: '';
+    @apply absolute inset-0 bg-white/0 transition-colors duration-200;
+  }
+
+  .btn-primary:hover::after {
+    @apply bg-white/10;
+  }
+
   .btn-secondary {
-    @apply bg-secondary text-background font-semibold px-6 py-3 rounded-xl
-           hover:bg-secondary/90 active:scale-[0.98]
+    @apply bg-secondary/10 text-secondary font-semibold px-6 py-3 rounded-xl
+           hover:bg-secondary/20 active:scale-[0.97]
            transition-all duration-200 ease-out;
   }
 
   .btn-ghost {
-    @apply text-text-secondary hover:text-text hover:bg-white/5
+    @apply text-text-secondary hover:text-text hover:bg-white/[0.04]
            px-4 py-2 rounded-xl transition-all duration-200;
   }
 
   .btn-danger {
     @apply bg-danger/10 text-danger border border-danger/20
-           px-4 py-2 rounded-xl hover:bg-danger/20 active:scale-[0.98]
+           px-4 py-2 rounded-xl hover:bg-danger/20 active:scale-[0.97]
            transition-all duration-200;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl
-           text-text placeholder:text-white/30
-           focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50
+    @apply w-full px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl
+           text-text placeholder:text-white/20
+           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40
            transition-all duration-200;
   }
 
   .card {
-    @apply glass rounded-2xl p-6;
+    @apply glass rounded-2xl p-6 hover:shadow-card-hover transition-all duration-300;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] animate-[gradient_4s_linear_infinite];
+  }
+
+  .bg-gradient-glow {
+    @apply absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 rounded-2xl;
+  }
+
+  .glow-ring {
+    @apply ring-1 ring-inset ring-white/[0.04] group-hover:ring-primary/20 transition-all duration-300;
   }
 }
 
-.leaflet-container {
-  @apply w-full h-full rounded-2xl;
-  z-index: 0;
+@keyframes gradient {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
 }
 
-.leaflet-marker-icon {
-  transition: transform 0.3s ease-out;
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.leaflet-container {
+  @apply w-full h-full;
+  z-index: 0;
+  background: #0B1121;
+}
+
+.leaflet-control-zoom a {
+  @apply bg-surface/80 text-text border-white/[0.06] !important;
+  backdrop-filter: blur(12px);
+}
+
+.leaflet-control-zoom a:hover {
+  @apply bg-surface text-text !important;
+}
+
+.leaflet-control-attribution {
+  @apply bg-surface/60 text-text-secondary/60 backdrop-blur-xl !important;
+}
+
+.leaflet-control-attribution a {
+  @apply text-text-secondary/80 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  @apply bg-surface/95 backdrop-blur-xl text-text shadow-card border border-white/[0.06] !important;
+  border-radius: 12px !important;
+}
+
+.leaflet-popup-tip {
+  @apply bg-surface/95 !important;
+}
+
+.leaflet-popup-close-button {
+  @apply text-text-secondary hover:text-text !important;
+}
+
+.marker-pulse {
+  animation: pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }

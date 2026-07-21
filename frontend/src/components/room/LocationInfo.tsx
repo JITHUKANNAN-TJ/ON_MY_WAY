@@ -8,38 +8,33 @@ interface LocationInfoProps {
 export function LocationInfo({ location }: LocationInfoProps) {
   if (!location) {
     return (
-      <div className="text-xs text-text-secondary">
+      <div className="flex items-center gap-2 text-xs text-text-secondary py-1">
+        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
         Waiting for GPS...
       </div>
     );
   }
 
+  const rows = [
+    { label: "Latitude", value: formatLatLng(location.lat) },
+    { label: "Longitude", value: formatLatLng(location.lng) },
+    { label: "Speed", value: formatSpeed(location.speed) },
+    { label: "Heading", value: formatHeading(location.heading) },
+    { label: "Accuracy", value: formatAccuracy(location.accuracy) },
+    { label: "Updated", value: formatTimestamp(location.timestamp) },
+  ];
+
   return (
-    <div className="text-xs space-y-1 text-text-secondary">
-      <div className="flex justify-between">
-        <span>Lat</span>
-        <span className="font-mono text-text">{formatLatLng(location.lat)}</span>
-      </div>
-      <div className="flex justify-between">
-        <span>Lng</span>
-        <span className="font-mono text-text">{formatLatLng(location.lng)}</span>
-      </div>
-      <div className="flex justify-between">
-        <span>Speed</span>
-        <span className="text-text">{formatSpeed(location.speed)}</span>
-      </div>
-      <div className="flex justify-between">
-        <span>Heading</span>
-        <span className="text-text">{formatHeading(location.heading)}</span>
-      </div>
-      <div className="flex justify-between">
-        <span>Accuracy</span>
-        <span className="text-text">{formatAccuracy(location.accuracy)}</span>
-      </div>
-      <div className="flex justify-between">
-        <span>Updated</span>
-        <span className="text-text">{formatTimestamp(location.timestamp)}</span>
-      </div>
+    <div className="space-y-1">
+      {rows.map((r) => (
+        <div key={r.label} className="flex justify-between items-center py-0.5">
+          <span className="text-xs text-text-secondary">{r.label}</span>
+          <span className="text-xs font-mono text-text truncate ml-4">{r.value}</span>
+        </div>
+      ))}
     </div>
   );
 }

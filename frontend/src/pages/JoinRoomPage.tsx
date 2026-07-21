@@ -61,12 +61,14 @@ export function JoinRoomPage() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4 flex items-start justify-center">
-      <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold mb-2">Join a Room</h1>
-        <p className="text-text-secondary mb-8">
-          Enter the room code or paste a share link.
-        </p>
+    <div className="min-h-screen pt-28 pb-16 px-4 flex items-start justify-center">
+      <div className="w-full max-w-md animate-fade-in">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold mb-3">Join a Room</h1>
+          <p className="text-text-secondary">
+            Enter the room code or paste a share link.
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="card space-y-5">
           <Input
@@ -75,6 +77,11 @@ export function JoinRoomPage() {
             value={input}
             onChange={(e) => handleInputChange(e.target.value)}
             maxLength={50}
+            leftIcon={
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+              </svg>
+            }
           />
 
           <Input
@@ -83,30 +90,47 @@ export function JoinRoomPage() {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             maxLength={50}
+            leftIcon={
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+            }
           />
 
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isViewer}
-              onChange={(e) => setIsViewer(e.target.checked)}
-              className="w-4 h-4 rounded border-white/20 bg-white/5 accent-primary"
-            />
-            <div>
-              <span className="text-sm font-medium">Join as Viewer</span>
-              <p className="text-xs text-text-secondary">
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <div className="relative mt-0.5">
+              <input
+                type="checkbox"
+                checked={isViewer}
+                onChange={(e) => setIsViewer(e.target.checked)}
+                className="peer sr-only"
+              />
+              <div className="w-5 h-5 rounded-md border border-white/20 bg-white/[0.03] group-hover:border-white/30 peer-checked:bg-primary peer-checked:border-primary transition-all duration-200 flex items-center justify-center">
+                {isViewer && (
+                  <svg className="w-3 h-3 text-background" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            <div className="select-none">
+              <span className="text-sm font-medium group-hover:text-text transition-colors">Join as Viewer</span>
+              <p className="text-xs text-text-secondary mt-0.5">
                 Watch without sharing your location
               </p>
             </div>
           </label>
 
           {error && (
-            <div className="text-sm text-danger bg-danger/10 rounded-xl px-4 py-3">
+            <div className="text-sm text-danger bg-danger/10 rounded-xl px-4 py-3 ring-1 ring-danger/20 flex items-center gap-2">
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
               {error}
             </div>
           )}
 
-          <Button type="submit" size="lg" className="w-full" disabled={loading}>
+          <Button type="submit" size="lg" className="w-full" loading={loading}>
             {loading ? "Joining..." : "Join Room"}
           </Button>
         </form>

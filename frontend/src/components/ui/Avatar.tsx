@@ -3,15 +3,21 @@ interface AvatarProps {
   size?: "sm" | "md" | "lg";
 }
 
-const sizes = { sm: "w-8 h-8 text-xs", md: "w-10 h-10 text-sm", lg: "w-14 h-14 text-lg" };
+const sizes = {
+  sm: "w-8 h-8 text-xs",
+  md: "w-10 h-10 text-sm",
+  lg: "w-14 h-14 text-lg",
+};
 
 const colors = [
-  "bg-primary/20 text-primary",
-  "bg-secondary/20 text-secondary",
-  "bg-warning/20 text-warning",
-  "bg-[#8B5CF6]/20 text-[#8B5CF6]",
-  "bg-[#EC4899]/20 text-[#EC4899]",
-  "bg-[#F97316]/20 text-[#F97316]",
+  "from-emerald-400 to-emerald-600",
+  "from-sky-400 to-blue-600",
+  "from-violet-400 to-purple-600",
+  "from-rose-400 to-pink-600",
+  "from-amber-400 to-orange-600",
+  "from-cyan-400 to-teal-600",
+  "from-fuchsia-400 to-pink-600",
+  "from-lime-400 to-green-600",
 ];
 
 function hashColor(name: string): number {
@@ -24,11 +30,11 @@ function hashColor(name: string): number {
 
 export function Avatar({ name, size = "md" }: AvatarProps) {
   const initial = name.charAt(0).toUpperCase();
-  const color = colors[hashColor(name)];
+  const gradient = colors[hashColor(name)];
 
   return (
     <div
-      className={`${sizes[size]} ${color} rounded-full flex items-center justify-center font-semibold shrink-0`}
+      className={`${sizes[size]} bg-gradient-to-br ${gradient} rounded-full flex items-center justify-center font-bold text-white shrink-0 shadow-lg`}
     >
       {initial}
     </div>

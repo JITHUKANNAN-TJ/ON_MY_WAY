@@ -6,15 +6,20 @@ interface RoomInfoProps {
 
 export function RoomInfo({ room }: RoomInfoProps) {
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium text-text-secondary">Room</h3>
-      <p className="text-lg font-bold tracking-wide">{room.code}</p>
-      <p className="text-sm text-text-secondary truncate">{room.name}</p>
-      {room.meeting_point && (
-        <div className="text-xs text-text-secondary">
-          📍 {room.meeting_point}
+    <div className="flex items-center gap-4">
+      <div className="text-left">
+        <div className="text-2xl font-bold tracking-[0.15em] font-mono text-primary">
+          {room.code}
         </div>
-      )}
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-sm text-text-secondary truncate max-w-[160px]">{room.name}</span>
+          {room.meeting_point && (
+            <span className="text-xs text-text-secondary hidden sm:inline">
+              &middot; {room.meeting_point}
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

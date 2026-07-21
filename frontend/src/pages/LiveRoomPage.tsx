@@ -9,7 +9,7 @@ import { ConnectionBanner } from "@/components/room/ConnectionBanner";
 import { PingBadge } from "@/components/ui/PingBadge";
 import { useRoom } from "@/hooks/useRoom";
 import { api } from "@/services/api";
-import { MemberRole } from "@/types";
+import { MemberRole, ConnectionState } from "@/types";
 
 export function LiveRoomPage() {
   const { code } = useParams<{ code: string }>();
@@ -90,22 +90,39 @@ export function LiveRoomPage() {
     );
   }
 
+  if (connectionState === ConnectionState.CONNECTING || connectionState === ConnectionState.DISCONNECTED) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center pt-16">
+        <div className="text-center space-y-4 animate-fade-in">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto ring-1 ring-primary/20">
+            <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+          <p className="text-text-secondary">Connecting to room...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen w-screen flex flex-col pt-16">
       {/* Top bar */}
-      <div className="glass border-b border-white/5 px-4 py-2 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="glass-strong border-b border-white/[0.04] px-4 py-2.5 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
           {room && <RoomInfo room={room} />}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <ConnectionBanner state={connectionState} latency={latency} />
           <PingBadge latency={latency} />
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="btn-ghost p-2 lg:hidden"
+            aria-label="Toggle sidebar"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           </button>
         </div>
@@ -121,13 +138,18 @@ export function LiveRoomPage() {
           <div className="absolute bottom-4 left-4 right-4 flex gap-2 lg:hidden">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="glass px-4 py-2 rounded-xl text-sm font-medium"
+              className="glass-strong px-4 py-2.5 rounded-xl text-sm font-medium backdrop-blur-xl"
             >
-              {members.length} member{members.length !== 1 ? "s" : ""}
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                </svg>
+                {members.length} member{members.length !== 1 ? "s" : ""}
+              </span>
             </button>
             <button
               onClick={handleCopyLink}
-              className="glass px-4 py-2 rounded-xl text-sm font-medium"
+              className="glass-strong px-4 py-2.5 rounded-xl text-sm font-medium backdrop-blur-xl"
             >
               Share
             </button>
@@ -138,33 +160,40 @@ export function LiveRoomPage() {
         <div
           className={`${
             sidebarOpen ? "translate-x-0" : "translate-x-full"
-          } lg:translate-x-0 fixed lg:relative right-0 top-16 bottom-0 w-80 glass border-l border-white/5 p-4 overflow-y-auto transition-transform duration-300 z-30 space-y-4`}
+          } lg:translate-x-0 fixed lg:relative right-0 top-16 bottom-0 w-80 glass-strong border-l border-white/[0.04] p-4 overflow-y-auto transition-transform duration-300 ease-out z-30 space-y-5`}
         >
           {/* Close button on mobile */}
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-text-secondary hover:text-text ml-auto block"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center justify-between lg:hidden">
+            <span className="text-sm font-medium text-text-secondary">Room Details</span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="text-text-secondary hover:text-text transition-colors p-1"
+              aria-label="Close sidebar"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
           {/* Members */}
           <div>
-            <h3 className="text-sm font-medium text-text-secondary mb-2">
-              Members ({members.length})
-            </h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider">
+                Members
+              </h3>
+              <span className="text-xs text-text-secondary">{members.length}</span>
+            </div>
             <MemberList members={members} myId={myId} />
           </div>
 
           {/* My Location */}
           {!isViewer && (
             <div>
-              <h3 className="text-sm font-medium text-text-secondary mb-2">
+              <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-2">
                 My Location
               </h3>
-              <div className="glass rounded-xl px-3 py-2.5">
+              <div className="bg-white/[0.02] rounded-xl px-3.5 py-3 ring-1 ring-white/[0.04]">
                 <LocationInfo location={myMember?.location} />
               </div>
             </div>
