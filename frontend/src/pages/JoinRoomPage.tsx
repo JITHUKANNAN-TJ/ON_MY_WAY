@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -7,6 +7,7 @@ import { normalizeRoomCode, stripRoomCode, parseShareLink } from "@/utils/roomCo
 
 export function JoinRoomPage() {
   const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const [input, setInput] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -14,13 +15,31 @@ export function JoinRoomPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleInputChange = (value: string) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cursorPos = e.target.selectionStart ?? 0;
+    const prevLength = input.length;
+    const value = e.target.value;
+
     const linkCode = parseShareLink(value);
     if (linkCode) {
       setInput(linkCode);
-    } else {
-      setInput(normalizeRoomCode(value));
+      return;
     }
+
+    const formatted = normalizeRoomCode(value);
+    setInput(formatted);
+
+    requestAnimationFrame(() => {
+      if (inputRef.current) {
+        const newLength = formatted.length;
+        const diff = newLength - prevLength;
+        let newPos = cursorPos + diff;
+        if (diff < 0 && cursorPos > newLength) {
+          newPos = newLength;
+        }
+        inputRef.current.setSelectionRange(newPos, newPos);
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,10 +91,11 @@ export function JoinRoomPage() {
 
         <form onSubmit={handleSubmit} className="card space-y-5">
           <Input
+            ref={inputRef}
             label="Room Code or Link"
             placeholder="K8XR-MQ2P"
             value={input}
-            onChange={(e) => handleInputChange(e.target.value)}
+            onChange={handleInputChange}
             maxLength={50}
             leftIcon={
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

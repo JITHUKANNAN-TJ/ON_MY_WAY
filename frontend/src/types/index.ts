@@ -29,6 +29,7 @@ export interface MemberData {
   location?: LocationData;
   distance_km?: number;
   eta_min?: number;
+  trail?: { lat: number; lng: number }[];
 }
 
 export interface LocationData {

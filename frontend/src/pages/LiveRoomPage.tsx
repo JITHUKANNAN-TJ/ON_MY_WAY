@@ -7,6 +7,8 @@ import { RoomControls } from "@/components/room/RoomControls";
 import { LocationInfo } from "@/components/room/LocationInfo";
 import { ConnectionBanner } from "@/components/room/ConnectionBanner";
 import { PingBadge } from "@/components/ui/PingBadge";
+import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
 import { useRoom } from "@/hooks/useRoom";
 import { api } from "@/services/api";
 import { MemberRole, ConnectionState } from "@/types";
@@ -20,6 +22,10 @@ export function LiveRoomPage() {
   const role = (localStorage.getItem("omw_role") || "MEMBER") as MemberRole;
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mapFullscreen, setMapFullscreen] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [endError, setEndError] = useState("");
 
   const {
     room,
@@ -43,15 +49,18 @@ export function LiveRoomPage() {
     localStorage.removeItem("omw_member_id");
     localStorage.removeItem("omw_display_name");
     localStorage.removeItem("omw_role");
+    setConfirmLeave(false);
     navigate("/");
   }, [leaveRoom, navigate]);
 
   const handleEndRoom = useCallback(async () => {
     if (!code) return;
+    setEndError("");
     try {
       await api.endRoom(code, sessionId);
-    } catch {
-      // room ended via WS
+      setConfirmEnd(false);
+    } catch (err) {
+      setEndError(err instanceof Error ? err.message : "Failed to end room");
     }
   }, [code, sessionId]);
 
@@ -106,9 +115,14 @@ export function LiveRoomPage() {
     );
   }
 
+  const handleToggleFullscreen = useCallback(() => {
+    setMapFullscreen((prev) => !prev);
+  }, []);
+
   return (
-    <div className="h-screen w-screen flex flex-col pt-16">
+    <div className={`h-screen w-screen flex flex-col ${mapFullscreen ? "pt-0" : "pt-16"}`}>
       {/* Top bar */}
+      {!mapFullscreen && (
       <div className="glass-strong border-b border-white/[0.04] px-4 py-2.5 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           {room && <RoomInfo room={room} />}
@@ -127,14 +141,22 @@ export function LiveRoomPage() {
           </button>
         </div>
       </div>
+      )}
 
       {/* Main area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Map */}
         <div className="flex-1 relative">
-          <LiveMap members={members} myId={myId} room={room} />
+          <LiveMap
+            members={members}
+            myId={myId}
+            room={room}
+            onToggleFullscreen={handleToggleFullscreen}
+            isFullscreen={mapFullscreen}
+          />
 
           {/* Mobile controls overlay */}
+          {!mapFullscreen && (
           <div className="absolute bottom-4 left-4 right-4 flex gap-2 lg:hidden">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -154,11 +176,12 @@ export function LiveRoomPage() {
               Share
             </button>
           </div>
+          )}
         </div>
 
         {/* Sidebar */}
         <div
-          className={`${
+          className={`${mapFullscreen ? "hidden" : ""} ${
             sidebarOpen ? "translate-x-0" : "translate-x-full"
           } lg:translate-x-0 fixed lg:relative right-0 top-16 bottom-0 w-80 glass-strong border-l border-white/[0.04] p-4 overflow-y-auto transition-transform duration-300 ease-out z-30 space-y-5`}
         >
@@ -193,7 +216,7 @@ export function LiveRoomPage() {
               <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-2">
                 My Location
               </h3>
-              <div className="bg-white/[0.02] rounded-xl px-3.5 py-3 ring-1 ring-white/[0.04]">
+              <div className="bg-white/[0.02] rounded-xl px-3.5 py-3 ring-1 ring-white/[0.06]">
                 <LocationInfo location={myMember?.location} />
               </div>
             </div>
@@ -203,12 +226,71 @@ export function LiveRoomPage() {
           <RoomControls
             isHost={isHost}
             roomCode={code}
-            onLeave={handleLeave}
-            onEndRoom={handleEndRoom}
+            onLeave={() => setConfirmLeave(true)}
+            onEndRoom={() => setConfirmEnd(true)}
             onCopyLink={handleCopyLink}
           />
         </div>
       </div>
+
+      {/* Confirm End Room */}
+      <Modal open={confirmEnd} onClose={() => { setConfirmEnd(false); setEndError(""); }}>
+        <div className="space-y-5 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-danger/10 text-danger flex items-center justify-center mx-auto ring-1 ring-danger/20">
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">End Room?</h2>
+            <p className="text-text-secondary text-sm mt-1">
+              This will disconnect all members and end the session. This cannot be undone.
+            </p>
+          </div>
+          {endError && (
+            <div className="text-sm text-danger bg-danger/10 rounded-xl px-4 py-3 ring-1 ring-danger/20">
+              {endError}
+            </div>
+          )}
+          <div className="flex gap-3">
+            <Button variant="ghost" className="flex-1" onClick={() => { setConfirmEnd(false); setEndError(""); }}>
+              Cancel
+            </Button>
+            <Button variant="danger" className="flex-1" onClick={handleEndRoom}>
+              End Room
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Confirm Leave Room */}
+      <Modal open={confirmLeave} onClose={() => setConfirmLeave(false)}>
+        <div className="space-y-5 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-secondary/10 text-secondary flex items-center justify-center mx-auto ring-1 ring-secondary/20">
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M3 12h13.5m0 0l-3-3m3 3l-3 3" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">Leave Room?</h2>
+            <p className="text-text-secondary text-sm mt-1">
+              You can rejoin later if the room is still active.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="ghost" className="flex-1" onClick={() => setConfirmLeave(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" className="flex-1" onClick={handleLeave} leftIcon={
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M3 12h13.5m0 0l-3-3m3 3l-3 3" />
+              </svg>
+            }>
+              Leave Room
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -127,6 +127,17 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
           break;
         }
 
+        case "trail_update": {
+          const trailId = payload.member_id as string;
+          const trail = payload.trail as { lat: number; lng: number }[];
+          const existing4 = members.get(trailId);
+          if (existing4) {
+            members.set(trailId, { ...existing4, trail });
+            setState((s) => ({ ...s, members: Array.from(members.values()) }));
+          }
+          break;
+        }
+
         case "room_ended": {
           setState((s) => ({ ...s, room: s.room ? { ...s.room, meeting_point: null, meeting_lat: null, meeting_lng: null } : null }));
           break;
@@ -162,6 +173,10 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
         const members = membersRef.current;
         const existing = members.get(selfId);
         if (existing) {
+          const newPoint = { lat: pos.lat, lng: pos.lng };
+          const trail = existing.trail ? [...existing.trail, newPoint] : [newPoint];
+          const MAX_TRAIL = 100;
+          if (trail.length > MAX_TRAIL) trail.splice(0, trail.length - MAX_TRAIL);
           members.set(selfId, {
             ...existing,
             location: {
@@ -172,6 +187,7 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
               accuracy: pos.accuracy,
               timestamp: pos.timestamp,
             },
+            trail,
           });
           updateState();
         }

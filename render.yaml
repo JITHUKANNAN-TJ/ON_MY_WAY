@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: onmyway-backend
+    runtime: docker
+    repo: https://github.com/JITHUKANNAN-TJ/ON_MY_WAY
+    rootDir: backend
+    region: oregon
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: onmyway-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        fromService:
+          type: static_site
+          name: onmyway-frontend
+          property: url
+      - key: PYTHON_VERSION
+        value: "3.12"
+
+  - type: static_site
+    name: onmyway-frontend
+    repo: https://github.com/JITHUKANNAN-TJ/ON_MY_WAY
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: onmyway-backend
+          property: url
+      - key: VITE_WS_URL
+        value: wss://onmyway-backend.onrender.com
+
+databases:
+  - name: onmyway-db
+    databaseName: onmyway
+    user: onmyway
+    plan: free
+    region: oregon
+    ipAllowList: []

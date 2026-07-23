@@ -12,7 +12,7 @@ from app.models.member import Member
 from app.models.room import Room
 from app.schemas.location import LocationData
 from app.schemas.member import MemberResponse
-from app.services.location_store import get_all_in_room, remove_location, set_location
+from app.services.location_store import add_location, get_all_in_room, get_trail, remove_location
 from app.services.meeting_point import calculate_eta
 from app.ws.manager import manager
 from app.ws.protocol import VERSION, make_message
@@ -132,7 +132,7 @@ async def _message_loop(room_code: str, member_id_str: str, member: Member, ws: 
                     if loc.latitude is None or loc.longitude is None:
                         continue
 
-                    set_location(member_id_str, loc)
+                    add_location(member_id_str, loc)
 
                     broadcast_payload = {
                         "member_id": member_id_str,
@@ -144,6 +144,16 @@ async def _message_loop(room_code: str, member_id_str: str, member: Member, ws: 
                         "timestamp": loc.timestamp,
                     }
                     await manager.broadcast(room_code, "location_update", broadcast_payload, exclude=member_id_str)
+
+                    trail = get_trail(member_id_str)
+                    await manager.broadcast(
+                        room_code,
+                        "trail_update",
+                        {
+                            "member_id": member_id_str,
+                            "trail": [{"lat": t.latitude, "lng": t.longitude} for t in trail],
+                        },
+                    )
 
                     if room and room.meeting_lat is not None and room.meeting_lng is not None:
                         distance, eta = calculate_eta(room.meeting_lat, room.meeting_lng, loc)
@@ -196,12 +206,18 @@ async def _get_member_list(db: AsyncSession, room_id: uuid.UUID) -> list[dict]:
         select(Member).where(Member.room_id == room_id, Member.status != "LEFT")
     )
     members = result.scalars().all()
-    return [
-        {
-            "id": str(m.id),
+    result_list = []
+    for m in members:
+        mid = str(m.id)
+        trail = get_trail(mid)
+        result_list.append({
+            "id": mid,
             "display_name": m.display_name,
             "role": m.role,
             "status": m.status,
-        }
-        for m in members
-    ]
+            "trail": [
+                {"lat": loc.latitude, "lng": loc.longitude}
+                for loc in trail
+            ],
+        })
+    return result_list
