@@ -85,6 +85,10 @@ export function LiveRoomPage() {
 
   const myMember = members.find((m) => m.id === myId);
 
+  const handleToggleFullscreen = useCallback(() => {
+    setMapFullscreen((prev) => !prev);
+  }, []);
+
   useEffect(() => {
     if (!sessionId || !displayName) {
       navigate("/join");
@@ -114,10 +118,6 @@ export function LiveRoomPage() {
       </div>
     );
   }
-
-  const handleToggleFullscreen = useCallback(() => {
-    setMapFullscreen((prev) => !prev);
-  }, []);
 
   return (
     <div className={`h-screen w-screen flex flex-col ${mapFullscreen ? "pt-0" : "pt-16"}`}>
