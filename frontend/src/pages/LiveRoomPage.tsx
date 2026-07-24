@@ -6,6 +6,7 @@ import { RoomInfo } from "@/components/room/RoomInfo";
 import { RoomControls } from "@/components/room/RoomControls";
 import { LocationInfo } from "@/components/room/LocationInfo";
 import { ConnectionBanner } from "@/components/room/ConnectionBanner";
+import { ChatBox } from "@/components/room/ChatBox";
 import { PingBadge } from "@/components/ui/PingBadge";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
@@ -22,6 +23,7 @@ export function LiveRoomPage() {
   const role = (localStorage.getItem("omw_role") || "MEMBER") as MemberRole;
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -36,6 +38,8 @@ export function LiveRoomPage() {
     connectionState,
     latency,
     leaveRoom,
+    chatMessages,
+    sendChatMessage,
   } = useRoom({
     roomCode: code || "",
     sessionId,
@@ -131,13 +135,27 @@ export function LiveRoomPage() {
           <ConnectionBanner state={connectionState} latency={latency} />
           <PingBadge latency={latency} />
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={() => { setChatOpen(false); setSidebarOpen(!sidebarOpen); }}
             className="btn-ghost p-2 lg:hidden"
             aria-label="Toggle sidebar"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
+          </button>
+          <button
+            onClick={() => { setSidebarOpen(true); setChatOpen((c) => !c); }}
+            className={`btn-ghost p-2 relative ${chatOpen ? "text-primary" : ""}`}
+            aria-label="Toggle chat"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+            </svg>
+            {chatMessages.length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-[10px] font-bold flex items-center justify-center text-white">
+                {chatMessages.length > 9 ? "9+" : chatMessages.length}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -183,11 +201,13 @@ export function LiveRoomPage() {
         <div
           className={`${mapFullscreen ? "hidden" : ""} ${
             sidebarOpen ? "translate-x-0" : "translate-x-full"
-          } lg:translate-x-0 fixed lg:relative right-0 top-16 bottom-0 w-80 glass-strong border-l border-white/[0.04] p-4 overflow-y-auto transition-transform duration-300 ease-out z-30 space-y-5`}
+          } lg:translate-x-0 fixed lg:relative right-0 top-16 bottom-0 w-80 glass-strong border-l border-white/[0.04] transition-transform duration-300 ease-out z-30`}
         >
           {/* Close button on mobile */}
-          <div className="flex items-center justify-between lg:hidden">
-            <span className="text-sm font-medium text-text-secondary">Room Details</span>
+          <div className="flex items-center justify-between p-4 pb-0 lg:hidden">
+            <span className="text-sm font-medium text-text-secondary">
+              {chatOpen ? "Chat" : "Room Details"}
+            </span>
             <button
               onClick={() => setSidebarOpen(false)}
               className="text-text-secondary hover:text-text transition-colors p-1"
@@ -199,37 +219,78 @@ export function LiveRoomPage() {
             </button>
           </div>
 
-          {/* Members */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider">
-                Members
-              </h3>
-              <span className="text-xs text-text-secondary">{members.length}</span>
-            </div>
-            <MemberList members={members} myId={myId} />
+          {/* Tabs on desktop */}
+          <div className="hidden lg:flex items-center gap-1 px-4 pt-4 pb-2 border-b border-white/[0.04]">
+            <button
+              onClick={() => setChatOpen(false)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+                !chatOpen
+                  ? "bg-primary/10 text-primary"
+                  : "text-text-secondary hover:text-text"
+              }`}
+            >
+              Room
+            </button>
+            <button
+              onClick={() => setChatOpen(true)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                chatOpen
+                  ? "bg-primary/10 text-primary"
+                  : "text-text-secondary hover:text-text"
+              }`}
+            >
+              Chat
+              {chatMessages.length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-primary text-[10px] font-bold flex items-center justify-center text-white">
+                  {chatMessages.length > 9 ? "9+" : chatMessages.length}
+                </span>
+              )}
+            </button>
           </div>
 
-          {/* My Location */}
-          {!isViewer && (
-            <div>
-              <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-2">
-                My Location
-              </h3>
-              <div className="bg-white/[0.02] rounded-xl px-3.5 py-3 ring-1 ring-white/[0.06]">
-                <LocationInfo location={myMember?.location} />
+          {chatOpen ? (
+            <div className="p-4 h-[calc(100%-3rem)]">
+              <ChatBox
+                messages={chatMessages}
+                myId={myId}
+                onSend={sendChatMessage}
+              />
+            </div>
+          ) : (
+            <div className="p-4 overflow-y-auto space-y-5 h-[calc(100%-3rem)]">
+              {/* Members */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider">
+                    Members
+                  </h3>
+                  <span className="text-xs text-text-secondary">{members.length}</span>
+                </div>
+                <MemberList members={members} myId={myId} />
               </div>
+
+              {/* My Location */}
+              {!isViewer && (
+                <div>
+                  <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-2">
+                    My Location
+                  </h3>
+                  <div className="bg-white/[0.02] rounded-xl px-3.5 py-3 ring-1 ring-white/[0.06]">
+                    <LocationInfo location={myMember?.location} />
+                  </div>
+                </div>
+              )}
+
+              {/* Controls */}
+              <RoomControls
+                isHost={isHost}
+                roomCode={code}
+                onLeave={() => setConfirmLeave(true)}
+                onEndRoom={() => setConfirmEnd(true)}
+                onCopyLink={handleCopyLink}
+              />
             </div>
           )}
-
-          {/* Controls */}
-          <RoomControls
-            isHost={isHost}
-            roomCode={code}
-            onLeave={() => setConfirmLeave(true)}
-            onEndRoom={() => setConfirmEnd(true)}
-            onCopyLink={handleCopyLink}
-          />
         </div>
       </div>
 

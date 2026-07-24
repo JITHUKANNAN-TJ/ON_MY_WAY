@@ -95,3 +95,10 @@ export interface MemberResponse {
   status: string;
   joined_at: string;
 }
+
+export interface ChatMessage {
+  member_id: string;
+  display_name: string;
+  text: string;
+  timestamp: number;
+}

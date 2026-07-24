@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { useGeolocation } from "./useGeolocation";
 import { useWebSocket } from "./useWebSocket";
 import {
+  ChatMessage,
   ConnectionState,
   MemberData,
   MemberRole,
@@ -25,6 +26,7 @@ interface RoomState {
   connectionState: ConnectionState;
   latency: number | null;
   gpsError: string | null;
+  chatMessages: ChatMessage[];
 }
 
 export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptions) {
@@ -37,6 +39,7 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
     connectionState: ConnectionState.DISCONNECTED,
     latency: null,
     gpsError: null,
+    chatMessages: [],
   });
 
   const membersRef = useRef<Map<string, MemberData>>(new Map());
@@ -142,6 +145,15 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
           setState((s) => ({ ...s, room: s.room ? { ...s.room, meeting_point: null, meeting_lat: null, meeting_lng: null } : null }));
           break;
         }
+
+        case "chat_message": {
+          const msg = payload as unknown as ChatMessage;
+          setState((s) => ({
+            ...s,
+            chatMessages: [...s.chatMessages, msg],
+          }));
+          break;
+        }
       }
     },
     []
@@ -209,6 +221,13 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
     sendWs("gps_lost");
   }, [sendWs]);
 
+  const sendChatMessage = useCallback(
+    (text: string) => {
+      sendWs("chat_message", { text });
+    },
+    [sendWs]
+  );
+
   return {
     ...state,
     connectionState,
@@ -216,5 +235,6 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
     gpsError,
     leaveRoom,
     reportGpsLost,
+    sendChatMessage,
   };
 }

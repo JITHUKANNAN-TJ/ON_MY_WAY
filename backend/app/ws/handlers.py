@@ -166,6 +166,20 @@ async def _message_loop(room_code: str, member_id_str: str, member: Member, ws: 
                     member.status = "ONLINE"
                     await db.commit()
 
+                elif msg_type == "chat_message":
+                    text = str(payload.get("text", "")).strip()
+                    if text and len(text) <= 500:
+                        await manager.broadcast(
+                            room_code,
+                            "chat_message",
+                            {
+                                "member_id": member_id_str,
+                                "display_name": member.display_name,
+                                "text": text,
+                                "timestamp": int(time.time() * 1000),
+                            },
+                        )
+
                 elif msg_type == "gps_lost":
                     member.status = "GPS_LOST"
                     await db.commit()
