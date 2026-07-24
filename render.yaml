@@ -32,7 +32,7 @@ services:
           name: onmyway-backend
           property: url
       - key: VITE_WS_URL
-        value: wss://onmyway-backend.onrender.com
+        value: wss://onmyway-backend-qnt3.onrender.com
 
 databases:
   - name: onmyway-db
