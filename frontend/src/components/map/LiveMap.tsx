@@ -14,18 +14,15 @@ import { formatDistance, formatEta, formatRelativeTime } from "@/utils/formatter
 
 type TileStyle = "street" | "dark" | "satellite";
 
-const TILE_STYLES: Record<TileStyle, { url: string; attribution: string }> = {
+const TILE_STYLES: Record<TileStyle, { url: string }> = {
   street: {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
   },
   dark: {
     url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
   },
   satellite: {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    attribution: "&copy; Esri",
   },
 };
 
@@ -202,8 +199,9 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
         zoom={13}
         className="w-full h-full"
         zoomControl={true}
+        attributionControl={false}
       >
-        <TileLayer url={tileLayer.url} attribution={tileLayer.attribution} />
+        <TileLayer url={tileLayer.url} attribution="" />
 
         <MapController members={members} myId={myId} />
 

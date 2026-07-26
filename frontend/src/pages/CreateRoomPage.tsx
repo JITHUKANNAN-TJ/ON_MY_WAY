@@ -144,10 +144,11 @@ export function CreateRoomPage() {
                   zoom={2}
                   className="w-full h-full"
                   scrollWheelZoom={true}
+                  attributionControl={false}
                 >
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution="&copy; OpenStreetMap"
+                    attribution=""
                   />
                   <MeetingPointMarker
                     onSelect={handleMeetingSelect}
