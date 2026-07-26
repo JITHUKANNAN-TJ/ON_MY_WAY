@@ -50,6 +50,23 @@ async def join_room(db: AsyncSession, req: JoinRoomRequest) -> tuple[Room, Membe
         await db.commit()
         return None
 
+    # If a session_id is provided, try to reuse the existing member
+    if req.session_id:
+        existing = await db.execute(
+            select(Member).where(
+                Member.room_id == room.id,
+                Member.session_id == req.session_id,
+                Member.status != "LEFT",
+            )
+        )
+        member = existing.scalar_one_or_none()
+        if member:
+            member.display_name = req.display_name
+            member.status = "ONLINE"
+            await db.commit()
+            await db.refresh(member)
+            return room, member, req.session_id
+
     session_id = str(uuid.uuid4())
 
     member = Member(

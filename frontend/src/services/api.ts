@@ -35,7 +35,7 @@ export const api = {
     });
   },
 
-  joinRoom(body: { room_code: string; display_name: string; role: string }) {
+  joinRoom(body: { room_code: string; display_name: string; role: string; session_id?: string }) {
     return request<{
       room_id: string;
       room_code: string;

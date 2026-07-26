@@ -60,10 +60,13 @@ export function JoinRoomPage() {
 
     setLoading(true);
     try {
+      const existingSessionId = localStorage.getItem("omw_session_id") || undefined;
+      const existingRole = localStorage.getItem("omw_role");
       const data = await api.joinRoom({
         room_code: formattedCode,
         display_name: displayName.trim(),
         role: isViewer ? "VIEWER" : "MEMBER",
+        session_id: existingRole === "HOST" ? existingSessionId : undefined,
       });
 
       localStorage.setItem("omw_session_id", data.session_id);

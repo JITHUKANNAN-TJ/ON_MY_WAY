@@ -24,6 +24,7 @@ class JoinRoomRequest(BaseModel):
     room_code: str = Field(..., min_length=1, max_length=9)
     display_name: str = Field(..., min_length=1, max_length=50)
     role: str = Field(default="MEMBER", pattern="^(MEMBER|VIEWER)$")
+    session_id: str | None = None
 
 
 class JoinRoomResponse(BaseModel):
