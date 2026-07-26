@@ -217,9 +217,8 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
                 positions={trailPositions}
                 pathOptions={{
                   color,
-                  weight: 3,
-                  opacity: 0.5,
-                  dashArray: "6 4",
+                  weight: 5,
+                  opacity: 0.7,
                 }}
               />
             );
@@ -240,9 +239,8 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
                   ]}
                   pathOptions={{
                     color,
-                    weight: 2,
-                    opacity: 0.25,
-                    dashArray: "8 8",
+                    weight: 5,
+                    opacity: 0.6,
                   }}
                 />
               );
