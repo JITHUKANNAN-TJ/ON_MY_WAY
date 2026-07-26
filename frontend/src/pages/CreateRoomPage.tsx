@@ -8,6 +8,7 @@ import { api } from "@/services/api";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { MeetingPointMarker } from "@/components/map/MeetingPointMarker";
 import { tamilnaduColleges } from "@/data/tamilnaduColleges";
+import { tamilnaduPlaces } from "@/data/tamilnaduPlaces";
 import L from "leaflet";
 
 function createCollegeIcon(): L.DivIcon {
@@ -33,14 +34,37 @@ function createCollegeIcon(): L.DivIcon {
   });
 }
 
-function CollegeMarkers({ onSelect, visible }: { onSelect: (college: { display_name: string; lat: number; lng: number }) => void; visible: boolean }) {
+function createBusStandIcon(): L.DivIcon {
+  return L.divIcon({
+    html: `<div style="
+      width:24px;height:24px;
+      background:#F59E0B;
+      border:2.5px solid #fff;
+      border-radius:4px 50% 50% 50%;
+      transform:rotate(45deg);
+      box-shadow:0 0 12px #F59E0B80,0 2px 8px rgba(0,0,0,0.4);
+    "><div style="
+      width:10px;height:10px;
+      background:#fff;
+      border-radius:2px;
+      position:absolute;
+      top:50%;left:50%;
+      transform:translate(-50%,-50%) rotate(-45deg);
+    "></div></div>`,
+    className: "",
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+  });
+}
+
+function CollegeMarkers({ onSelect, visible }: { onSelect: (place: { display_name: string; lat: number; lng: number }) => void; visible: boolean }) {
   if (!visible) return null;
 
   return (
     <>
       {tamilnaduColleges.map((c) => (
         <Marker
-          key={`${c.lat}-${c.lng}`}
+          key={`c-${c.lat}-${c.lng}`}
           position={[c.lat, c.lng]}
           icon={createCollegeIcon()}
         >
@@ -50,6 +74,26 @@ function CollegeMarkers({ onSelect, visible }: { onSelect: (college: { display_n
               <div className="text-text-secondary text-xs">{c.city}, Tamil Nadu</div>
               <button
                 onClick={() => onSelect({ display_name: c.name, lat: c.lat, lng: c.lng })}
+                className="mt-1.5 w-full px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              >
+                Set as Meeting Point
+              </button>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+      {tamilnaduPlaces.map((p) => (
+        <Marker
+          key={`p-${p.lat}-${p.lng}`}
+          position={[p.lat, p.lng]}
+          icon={createBusStandIcon()}
+        >
+          <Popup>
+            <div className="text-sm space-y-1">
+              <div className="font-semibold text-text">{p.name}</div>
+              <div className="text-text-secondary text-xs">{p.city}, Tamil Nadu</div>
+              <button
+                onClick={() => onSelect({ display_name: p.name, lat: p.lat, lng: p.lng })}
                 className="mt-1.5 w-full px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
               >
                 Set as Meeting Point
