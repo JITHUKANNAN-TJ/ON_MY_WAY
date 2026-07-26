@@ -1,11 +1,22 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { api } from "@/services/api";
-import { MapContainer, TileLayer } from "react-leaflet";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { MeetingPointMarker } from "@/components/map/MeetingPointMarker";
+
+function MapPanController({ center }: { center: [number, number] | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.flyTo(center, 15, { duration: 1 });
+    }
+  }, [center, map]);
+  return null;
+}
 
 export function CreateRoomPage() {
   const navigate = useNavigate();
@@ -18,6 +29,7 @@ export function CreateRoomPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [result, setResult] = useState<{
     room_code: string;
     share_link: string;
@@ -25,9 +37,28 @@ export function CreateRoomPage() {
     member_id: string;
   } | null>(null);
 
-  const handleMeetingSelect = useCallback((lat: number, lng: number) => {
+  const handleMeetingSelect = useCallback(async (lat: number, lng: number) => {
     setMeetingLat(lat);
     setMeetingLng(lng);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+        { headers: { "Accept-Language": "en" } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.display_name) setMeetingPointName(data.display_name);
+      }
+    } catch {
+      // Silently fail - name stays editable
+    }
+  }, []);
+
+  const handleLocationSelect = useCallback((suggestion: { display_name: string; lat: number; lng: number }) => {
+    setMeetingPointName(suggestion.display_name);
+    setMeetingLat(suggestion.lat);
+    setMeetingLng(suggestion.lng);
+    setMapCenter([suggestion.lat, suggestion.lng]);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,12 +155,12 @@ export function CreateRoomPage() {
             />
 
             <div className="space-y-3">
-              <Input
+              <LocationAutocomplete
                 label="Meeting Point (optional)"
                 placeholder="College Main Gate"
                 value={meetingPointName}
-                onChange={(e) => setMeetingPointName(e.target.value)}
-                maxLength={100}
+                onChange={setMeetingPointName}
+                onSelect={handleLocationSelect}
                 leftIcon={
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -155,6 +186,7 @@ export function CreateRoomPage() {
                     initialLat={meetingLat}
                     initialLng={meetingLng}
                   />
+                  <MapPanController center={mapCenter} />
                 </MapContainer>
               </div>
               <p className="text-xs text-text-secondary">
