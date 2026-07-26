@@ -166,6 +166,8 @@ function TileLayerSwitcher({ style, onChange }: { style: TileStyle; onChange: (s
   );
 }
 
+const OSRM_CACHE_TTL = 10000;
+
 export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen }: LiveMapProps) {
   const myMember = members.find((m) => m.id === myId);
   const center: [number, number] = myMember?.location
@@ -173,6 +175,8 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
     : [20, 0];
 
   const [tileStyle, setTileStyle] = useState<TileStyle>(getStoredTileStyle);
+  const [roadRoutes, setRoadRoutes] = useState<Record<string, [number, number][]>>({});
+  const routeFetchTimers = useRef<Record<string, number>>({});
 
   const handleTileStyleChange = useCallback((style: TileStyle) => {
     setTileStyle(style);
@@ -191,6 +195,39 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
     members.forEach((m, idx) => map.set(m.id, getMemberColor(idx)));
     return map;
   }, [members]);
+
+  const fetchRoadRoute = useCallback(async (fromLat: number, fromLng: number, toLat: number, toLng: number, routeKey: string) => {
+    const now = Date.now();
+    if (routeFetchTimers.current[routeKey] && now - routeFetchTimers.current[routeKey] < OSRM_CACHE_TTL) return;
+    routeFetchTimers.current[routeKey] = now;
+
+    try {
+      const res = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full`,
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.code !== "Ok" || !data.routes?.[0]) return;
+      const coords: [number, number][] = data.routes[0].geometry.coordinates.map(
+        ([lng, lat]: number[]) => [lat, lng]
+      );
+      setRoadRoutes((prev) => ({ ...prev, [routeKey]: coords }));
+    } catch {
+      // Road route unavailable — straight line remains
+    }
+  }, []);
+
+  useEffect(() => {
+    if (room?.meeting_lat == null || room?.meeting_lng == null) return;
+    const meetingLat = room.meeting_lat;
+    const meetingLng = room.meeting_lng;
+    members
+      .filter((m) => m.location && !viewerIds.has(m.id))
+      .forEach((m) => {
+        const routeKey = `route-${m.id}`;
+        fetchRoadRoute(m.location!.lat, m.location!.lng, meetingLat, meetingLng, routeKey);
+      });
+  }, [members, room?.meeting_lat, room?.meeting_lng, viewerIds, fetchRoadRoute]);
 
   return (
     <div className="relative w-full h-full">
@@ -224,25 +261,40 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
             );
           })}
 
-        {/* Route lines to meeting point */}
+        {/* Route lines to meeting point — straight line fallback + road route overlay */}
         {room?.meeting_lat != null && room?.meeting_lng != null && (
           members
             .filter((m) => m.location && !viewerIds.has(m.id))
             .map((m) => {
               const color = memberColorMap.get(m.id) || "#10B981";
+              const routeKey = `route-${m.id}`;
+              const roadCoords = roadRoutes[routeKey];
               return (
-                <Polyline
-                  key={`route-${m.id}`}
-                  positions={[
-                    [m.location!.lat, m.location!.lng],
-                    [room.meeting_lat!, room.meeting_lng!],
-                  ]}
-                  pathOptions={{
-                    color,
-                    weight: 5,
-                    opacity: 0.6,
-                  }}
-                />
+                <div key={`route-${m.id}`}>
+                  {/* Straight-line fallback (always visible) */}
+                  <Polyline
+                    positions={[
+                      [m.location!.lat, m.location!.lng],
+                      [room.meeting_lat!, room.meeting_lng!],
+                    ]}
+                    pathOptions={{
+                      color,
+                      weight: 5,
+                      opacity: roadCoords ? 0.15 : 0.6,
+                    }}
+                  />
+                  {/* Road route overlay (replaces when fetched) */}
+                  {roadCoords && (
+                    <Polyline
+                      positions={roadCoords}
+                      pathOptions={{
+                        color,
+                        weight: 5,
+                        opacity: 0.7,
+                      }}
+                    />
+                  )}
+                </div>
               );
             })
         )}
