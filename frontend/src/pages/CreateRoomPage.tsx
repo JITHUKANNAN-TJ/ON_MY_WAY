@@ -5,8 +5,62 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { api } from "@/services/api";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { MeetingPointMarker } from "@/components/map/MeetingPointMarker";
+import { tamilnaduColleges } from "@/data/tamilnaduColleges";
+import L from "leaflet";
+
+function createCollegeIcon(): L.DivIcon {
+  return L.divIcon({
+    html: `<div style="
+      width:24px;height:24px;
+      background:#3B82F6;
+      border:2.5px solid #fff;
+      border-radius:50%;
+      box-shadow:0 0 12px #3B82F680,0 2px 8px rgba(0,0,0,0.4);
+    "><div style="
+      width:10px;height:10px;
+      background:#fff;
+      border-radius:50%;
+      position:absolute;
+      top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+    "></div></div>`,
+    className: "",
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+  });
+}
+
+function CollegeMarkers({ onSelect, visible }: { onSelect: (college: { display_name: string; lat: number; lng: number }) => void; visible: boolean }) {
+  if (!visible) return null;
+
+  return (
+    <>
+      {tamilnaduColleges.map((c) => (
+        <Marker
+          key={`${c.lat}-${c.lng}`}
+          position={[c.lat, c.lng]}
+          icon={createCollegeIcon()}
+        >
+          <Popup>
+            <div className="text-sm space-y-1">
+              <div className="font-semibold text-text">{c.name}</div>
+              <div className="text-text-secondary text-xs">{c.city}, Tamil Nadu</div>
+              <button
+                onClick={() => onSelect({ display_name: c.name, lat: c.lat, lng: c.lng })}
+                className="mt-1.5 w-full px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              >
+                Set as Meeting Point
+              </button>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+    </>
+  );
+}
 
 function MapPanController({ center }: { center: [number, number] | null }) {
   const map = useMap();
@@ -30,6 +84,7 @@ export function CreateRoomPage() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [showColleges, setShowColleges] = useState(false);
   const [result, setResult] = useState<{
     room_code: string;
     share_link: string;
@@ -169,10 +224,36 @@ export function CreateRoomPage() {
                 }
               />
 
+              <div className="flex flex-wrap gap-1.5">
+                {tamilnaduColleges.slice(0, 6).map((c) => (
+                  <button
+                    key={c.name}
+                    onClick={() => handleLocationSelect({ display_name: c.name, lat: c.lat, lng: c.lng })}
+                    className="text-xs px-2.5 py-1 rounded-full bg-white/[0.04] text-text-secondary hover:bg-primary/10 hover:text-primary transition-colors"
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-text-secondary">
+                  Click on the map or a college pin to set a meeting point.
+                </p>
+                <button
+                  onClick={() => setShowColleges((c) => !c)}
+                  className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+                    showColleges
+                      ? "bg-primary/10 text-primary ring-1 ring-primary/20"
+                      : "bg-white/[0.04] text-text-secondary hover:text-text"
+                  }`}
+                >
+                  {showColleges ? "Hide Colleges" : "Show Colleges"}
+                </button>
+              </div>
               <div className="h-48 rounded-xl overflow-hidden border border-white/[0.06]">
                 <MapContainer
-                  center={[20, 0]}
-                  zoom={2}
+                  center={[10.8, 78.7]}
+                  zoom={7}
                   className="w-full h-full"
                   scrollWheelZoom={true}
                   attributionControl={false}
@@ -186,12 +267,10 @@ export function CreateRoomPage() {
                     initialLat={meetingLat}
                     initialLng={meetingLng}
                   />
+                  <CollegeMarkers onSelect={handleLocationSelect} visible={showColleges} />
                   <MapPanController center={mapCenter} />
                 </MapContainer>
               </div>
-              <p className="text-xs text-text-secondary">
-                Click on the map to set a meeting point. Everyone will see distances and ETAs.
-              </p>
             </div>
           </div>
 
