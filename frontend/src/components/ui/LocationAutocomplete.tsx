@@ -34,7 +34,7 @@ export function LocationAutocomplete({ value, onChange, onSelect, label, placeho
     setLoading(true);
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`,
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=in`,
         { headers: { "Accept-Language": "en" } }
       );
       if (!res.ok) throw new Error("Failed to fetch");
