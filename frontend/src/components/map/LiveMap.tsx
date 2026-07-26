@@ -26,6 +26,12 @@ const TILE_STYLES: Record<TileStyle, { url: string }> = {
   },
 };
 
+interface RoadRoute {
+  coords: [number, number][];
+  distanceKm: number;
+  etaMin: number;
+}
+
 const TILE_KEY = "omw_tile_style";
 
 function getStoredTileStyle(): TileStyle {
@@ -175,7 +181,7 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
     : [20, 0];
 
   const [tileStyle, setTileStyle] = useState<TileStyle>(getStoredTileStyle);
-  const [roadRoutes, setRoadRoutes] = useState<Record<string, [number, number][]>>({});
+  const [roadRoutes, setRoadRoutes] = useState<Record<string, RoadRoute>>({});
   const routeFetchTimers = useRef<Record<string, number>>({});
 
   const handleTileStyleChange = useCallback((style: TileStyle) => {
@@ -208,10 +214,13 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
       if (!res.ok) return;
       const data = await res.json();
       if (data.code !== "Ok" || !data.routes?.[0]) return;
-      const coords: [number, number][] = data.routes[0].geometry.coordinates.map(
+      const route = data.routes[0];
+      const coords: [number, number][] = route.geometry.coordinates.map(
         ([lng, lat]: number[]) => [lat, lng]
       );
-      setRoadRoutes((prev) => ({ ...prev, [routeKey]: coords }));
+      const distanceKm = Math.round((route.distance / 1000) * 10) / 10;
+      const etaMin = Math.max(1, Math.round(route.duration / 60));
+      setRoadRoutes((prev) => ({ ...prev, [routeKey]: { coords, distanceKm, etaMin } }));
     } catch {
       // Road route unavailable — straight line remains
     }
@@ -268,7 +277,7 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
             .map((m) => {
               const color = memberColorMap.get(m.id) || "#10B981";
               const routeKey = `route-${m.id}`;
-              const roadCoords = roadRoutes[routeKey];
+              const roadRoute = roadRoutes[routeKey];
               return (
                 <div key={`route-${m.id}`}>
                   {/* Straight-line fallback (always visible) */}
@@ -280,13 +289,13 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
                     pathOptions={{
                       color,
                       weight: 5,
-                      opacity: roadCoords ? 0.15 : 0.6,
+                      opacity: roadRoute ? 0.15 : 0.6,
                     }}
                   />
                   {/* Road route overlay (replaces when fetched) */}
-                  {roadCoords && (
+                  {roadRoute && (
                     <Polyline
-                      positions={roadCoords}
+                      positions={roadRoute.coords}
                       pathOptions={{
                         color,
                         weight: 5,
@@ -333,11 +342,20 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
                         {m.display_name}
                         {isSelf && " (You)"}
                       </div>
-                      {m.distance_km !== undefined && (
-                        <div className="text-text-secondary">
-                          {formatDistance(m.distance_km)} &middot; {formatEta(m.eta_min || 0)}
-                        </div>
-                      )}
+                      {(() => {
+                        const roadRoute = roadRoutes[`route-${m.id}`];
+                        const showRoad = roadRoute && room?.meeting_lat != null;
+                        const dist = showRoad ? roadRoute.distanceKm : m.distance_km;
+                        const eta = showRoad ? roadRoute.etaMin : m.eta_min;
+                        if (dist === undefined) return null;
+                        return (
+                          <div className="text-text-secondary">
+                            {formatDistance(dist)}
+                            {showRoad && <span className="text-xs opacity-60"> via road</span>}
+                            {eta != null && <span> &middot; {formatEta(eta)}</span>}
+                          </div>
+                        );
+                      })()}
                       {loc.speed != null && (
                         <div className="text-xs text-text-secondary">
                           Speed: {Math.round(loc.speed)} km/h
