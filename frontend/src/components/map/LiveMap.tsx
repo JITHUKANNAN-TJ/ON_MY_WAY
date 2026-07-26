@@ -75,8 +75,7 @@ function createTransportIcon(mode: TransportMode, busSpriteUrl?: string): L.DivI
       html: `<div style="
         width:40px;height:40px;
         background:url('${busSpriteUrl}') no-repeat center/contain;
-        transform:perspective(120px) rotateX(15deg);
-        filter:drop-shadow(0 6px 6px rgba(0,0,0,0.5));
+        filter:drop-shadow(0 3px 4px rgba(0,0,0,0.4));
       "></div>`,
       className: "",
       iconSize: [44, 44],
@@ -89,12 +88,11 @@ function createTransportIcon(mode: TransportMode, busSpriteUrl?: string): L.DivI
 
   return L.divIcon({
     html: `<div style="
+      width:44px;height:44px;
+      display:flex;align-items:center;justify-content:center;
       font-size:${size}px;
       line-height:1;
-      text-align:center;
-      transform:perspective(120px) rotateX(20deg);
-      filter:drop-shadow(0 4px 4px rgba(0,0,0,0.4));
-      transition:all 0.3s ease;
+      filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3));
     ">${emoji}</div>`,
     className: "",
     iconSize: [44, 44],
@@ -231,7 +229,7 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
   const routeFetchTimers = useRef<Record<string, number>>({});
 
   useEffect(() => {
-    renderGltfSprite("/models/bus.glb", 64).then(setBusSprite);
+    renderGltfSprite("/models/bus.glb", 64).then(setBusSprite).catch(() => setBusSprite(null));
   }, []);
 
   const handleTileStyleChange = useCallback((style: TileStyle) => {
