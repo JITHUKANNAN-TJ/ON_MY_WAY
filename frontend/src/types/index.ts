@@ -102,3 +102,31 @@ export interface ChatMessage {
   text: string;
   timestamp: number;
 }
+
+export type TransportMode = "walking" | "cycling" | "bike" | "car" | "bus" | "train";
+
+export const TRANSPORT_MODES: { key: TransportMode; icon: string; label: string }[] = [
+  { key: "walking", icon: "🚶", label: "Walking" },
+  { key: "cycling", icon: "🚲", label: "Cycling" },
+  { key: "bike", icon: "🏍️", label: "Bike" },
+  { key: "car", icon: "🚗", label: "Car" },
+  { key: "bus", icon: "🚌", label: "Bus" },
+  { key: "train", icon: "🚆", label: "Train" },
+];
+
+export function getOsrmProfile(mode: TransportMode): string {
+  switch (mode) {
+    case "walking": return "walking";
+    case "cycling":
+    case "bike": return "cycling";
+    default: return "driving";
+  }
+}
+
+export function getEtaMultiplier(mode: TransportMode): number {
+  switch (mode) {
+    case "bus": return 1.5;
+    case "train": return -1;
+    default: return 1;
+  }
+}

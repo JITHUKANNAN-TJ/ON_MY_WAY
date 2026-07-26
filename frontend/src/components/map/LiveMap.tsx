@@ -9,8 +9,9 @@ import {
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
-import { MemberData, MemberRole, RoomData } from "@/types";
+import { MemberData, MemberRole, RoomData, TransportMode, TRANSPORT_MODES, getOsrmProfile } from "@/types";
 import { formatDistance, formatEta, formatRelativeTime } from "@/utils/formatters";
+import { renderGltfSprite } from "@/utils/renderGltfSprite";
 
 type TileStyle = "street" | "dark" | "satellite";
 
@@ -59,6 +60,48 @@ function createMemberIcon(color: string, isSelf: boolean): L.DivIcon {
   });
 }
 
+const TRANSPORT_ICONS: Record<string, string> = {
+  walking: "🚶",
+  cycling: "🚲",
+  bike: "🏍️",
+  car: "🚗",
+  bus: "🚌",
+  train: "🚆",
+};
+
+function createTransportIcon(mode: TransportMode, busSpriteUrl?: string): L.DivIcon {
+  if (mode === "bus" && busSpriteUrl) {
+    return L.divIcon({
+      html: `<div style="
+        width:40px;height:40px;
+        background:url('${busSpriteUrl}') no-repeat center/contain;
+        transform:perspective(120px) rotateX(15deg);
+        filter:drop-shadow(0 6px 6px rgba(0,0,0,0.5));
+      "></div>`,
+      className: "",
+      iconSize: [44, 44],
+      iconAnchor: [22, 22],
+    });
+  }
+
+  const emoji = TRANSPORT_ICONS[mode] || "📍";
+  const size = mode === "bus" || mode === "train" ? 32 : mode === "car" || mode === "bike" ? 28 : 24;
+
+  return L.divIcon({
+    html: `<div style="
+      font-size:${size}px;
+      line-height:1;
+      text-align:center;
+      transform:perspective(120px) rotateX(20deg);
+      filter:drop-shadow(0 4px 4px rgba(0,0,0,0.4));
+      transition:all 0.3s ease;
+    ">${emoji}</div>`,
+    className: "",
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+  });
+}
+
 const MEMBER_COLORS = [
   "#10B981", "#38BDF8", "#F59E0B", "#8B5CF6",
   "#EC4899", "#F97316", "#06B6D4", "#84CC16",
@@ -95,6 +138,8 @@ interface LiveMapProps {
   members: MemberData[];
   myId: string | null;
   room: RoomData | null;
+  transportMode: TransportMode;
+  onTransportModeChange: (mode: TransportMode) => void;
   onToggleFullscreen?: () => void;
   isFullscreen?: boolean;
 }
@@ -174,7 +219,7 @@ function TileLayerSwitcher({ style, onChange }: { style: TileStyle; onChange: (s
 
 const OSRM_CACHE_TTL = 10000;
 
-export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen }: LiveMapProps) {
+export function LiveMap({ members, myId, room, transportMode, onTransportModeChange, onToggleFullscreen, isFullscreen }: LiveMapProps) {
   const myMember = members.find((m) => m.id === myId);
   const center: [number, number] = myMember?.location
     ? [myMember.location.lat, myMember.location.lng]
@@ -182,7 +227,12 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
 
   const [tileStyle, setTileStyle] = useState<TileStyle>(getStoredTileStyle);
   const [roadRoutes, setRoadRoutes] = useState<Record<string, RoadRoute>>({});
+  const [busSprite, setBusSprite] = useState<string | null>(null);
   const routeFetchTimers = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    renderGltfSprite("/models/bus.glb", 64).then(setBusSprite);
+  }, []);
 
   const handleTileStyleChange = useCallback((style: TileStyle) => {
     setTileStyle(style);
@@ -207,9 +257,20 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
     if (routeFetchTimers.current[routeKey] && now - routeFetchTimers.current[routeKey] < OSRM_CACHE_TTL) return;
     routeFetchTimers.current[routeKey] = now;
 
+    if (transportMode === "train") {
+      const dlat = ((toLat - fromLat) * Math.PI) / 180;
+      const dlng = ((toLng - fromLng) * Math.PI) / 180;
+      const a = Math.sin(dlat / 2) ** 2 + Math.cos((fromLat * Math.PI) / 180) * Math.cos((toLat * Math.PI) / 180) * Math.sin(dlng / 2) ** 2;
+      const distanceKm = Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+      const etaMin = Math.max(1, Math.round((distanceKm / 60) * 60));
+      setRoadRoutes((prev) => ({ ...prev, [routeKey]: { coords: [], distanceKm, etaMin } }));
+      return;
+    }
+
+    const profile = getOsrmProfile(transportMode);
     try {
       const res = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full`,
+        `https://router.project-osrm.org/route/v1/${profile}/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full`,
       );
       if (!res.ok) return;
       const data = await res.json();
@@ -219,12 +280,13 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
         ([lng, lat]: number[]) => [lat, lng]
       );
       const distanceKm = Math.round((route.distance / 1000) * 10) / 10;
-      const etaMin = Math.max(1, Math.round(route.duration / 60));
+      let etaMin = Math.max(1, Math.round(route.duration / 60));
+      if (transportMode === "bus") etaMin = Math.round(etaMin * 1.5);
       setRoadRoutes((prev) => ({ ...prev, [routeKey]: { coords, distanceKm, etaMin } }));
     } catch {
       // Road route unavailable — straight line remains
     }
-  }, []);
+  }, [transportMode]);
 
   useEffect(() => {
     if (room?.meeting_lat == null || room?.meeting_lng == null) return;
@@ -334,7 +396,7 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
               <div key={m.id}>
                 <Marker
                   position={[loc.lat, loc.lng]}
-                  icon={createMemberIcon(color, isSelf)}
+                  icon={createTransportIcon(transportMode, busSprite || undefined)}
                 >
                   <Popup>
                     <div className="text-sm space-y-1 min-w-[140px]">
@@ -409,6 +471,24 @@ export function LiveMap({ members, myId, room, onToggleFullscreen, isFullscreen 
           )}
         </button>
       )}
+
+      {/* Transport mode selector */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] flex gap-1 bg-surface/80 backdrop-blur-xl rounded-xl p-1 ring-1 ring-white/[0.08] shadow-2xl">
+        {TRANSPORT_MODES.map((m) => (
+          <button
+            key={m.key}
+            onClick={() => onTransportModeChange(m.key)}
+            className={`px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+              transportMode === m.key
+                ? "bg-primary text-white shadow-lg shadow-primary/30 scale-110"
+                : "text-text-secondary hover:text-text hover:bg-white/[0.08]"
+            }`}
+            title={m.label}
+          >
+            {m.icon}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

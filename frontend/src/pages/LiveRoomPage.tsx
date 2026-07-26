@@ -12,7 +12,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { useRoom } from "@/hooks/useRoom";
 import { api } from "@/services/api";
-import { MemberRole, ConnectionState } from "@/types";
+import { MemberRole, ConnectionState, TransportMode } from "@/types";
 
 export function LiveRoomPage() {
   const { code } = useParams<{ code: string }>();
@@ -25,6 +25,7 @@ export function LiveRoomPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
   const [mapFullscreen, setMapFullscreen] = useState(false);
+  const [transportMode, setTransportMode] = useState<TransportMode>("car");
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [endError, setEndError] = useState("");
@@ -184,6 +185,8 @@ export function LiveRoomPage() {
             members={members}
             myId={myId}
             room={room}
+            transportMode={transportMode}
+            onTransportModeChange={setTransportMode}
             onToggleFullscreen={handleToggleFullscreen}
             isFullscreen={mapFullscreen}
           />
