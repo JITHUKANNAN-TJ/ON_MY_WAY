@@ -37,4 +37,5 @@ export const tamilnaduColleges: College[] = [
   { name: "Stella Maris College", city: "Chennai", lat: 13.0536, lng: 80.2670 },
   { name: "Meenakshi Academy of Higher Education and Research", city: "Chennai", lat: 13.0397, lng: 80.2118 },
   { name: "Vel Tech Rangarajan Dr. Sagunthala R&D Institute of Science and Technology", city: "Chennai", lat: 13.0605, lng: 80.1481 },
+  { name: "V.S.B. Engineering College", city: "Karur", lat: 10.9550, lng: 77.9549 },
 ];
