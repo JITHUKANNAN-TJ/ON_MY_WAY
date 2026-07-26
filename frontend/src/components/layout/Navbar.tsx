@@ -33,7 +33,7 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <Link
             to="/create"
-            className={`btn-primary text-sm !px-4 !py-2 ${
+            className={`btn-primary text-sm !px-4 !py-2.5 ${
               location.pathname === "/create" ? "ring-2 ring-primary/50" : ""
             }`}
           >

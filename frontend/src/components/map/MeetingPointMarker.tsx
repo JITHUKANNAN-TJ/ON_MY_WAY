@@ -44,8 +44,8 @@ export function MeetingPointMarker({ onSelect, initialLat, initialLng }: Meeting
           transform:translate(-50%,-50%);
         "></div></div>`,
         className: "",
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
+        iconSize: [44, 44],
+        iconAnchor: [22, 44],
       })}
     >
       <Popup>Meeting Point</Popup>

@@ -195,7 +195,7 @@ export function CreateRoomPage() {
             </div>
 
             <div className="bg-white/[0.03] rounded-2xl py-5 px-6 ring-1 ring-white/[0.06]">
-              <p className="text-3xl font-bold tracking-[0.3em] text-primary font-mono">
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-[0.2em] text-primary font-mono">
                 {result.room_code}
               </p>
             </div>

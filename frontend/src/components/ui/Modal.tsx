@@ -27,7 +27,7 @@ export function Modal({ open, onClose, children }: ModalProps) {
         onClick={onClose}
       />
       <div
-        className="relative glass-strong rounded-2xl p-8 w-full max-w-md z-10 animate-scale-in shadow-2xl"
+        className="relative glass-strong rounded-2xl p-4 sm:p-8 w-full max-w-md z-10 animate-scale-in shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button

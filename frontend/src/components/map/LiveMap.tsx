@@ -40,6 +40,7 @@ function getStoredTileStyle(): TileStyle {
 function createMemberIcon(color: string, isSelf: boolean): L.DivIcon {
   const size = isSelf ? 20 : 16;
   const border = isSelf ? "3px solid #fff" : "2px solid rgba(255,255,255,0.5)";
+  const hitArea = 16;
   return L.divIcon({
     html: `<div style="
       width:${size}px;height:${size}px;
@@ -50,8 +51,8 @@ function createMemberIcon(color: string, isSelf: boolean): L.DivIcon {
       transition:all 0.3s ease;
     "></div>`,
     className: "",
-    iconSize: [size + 8, size + 8],
-    iconAnchor: [(size + 8) / 2, (size + 8) / 2],
+    iconSize: [size + hitArea, size + hitArea],
+    iconAnchor: [(size + hitArea) / 2, (size + hitArea) / 2],
   });
 }
 
@@ -82,8 +83,8 @@ function createMeetingPointIcon(): L.DivIcon {
       transform:translate(-50%,-50%);
     "></div></div>`,
     className: "",
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
+    iconSize: [44, 44],
+    iconAnchor: [22, 44],
   });
 }
 
@@ -132,21 +133,39 @@ function TileLayerSwitcher({ style, onChange }: { style: TileStyle; onChange: (s
   ];
 
   return (
-    <div className="absolute top-4 right-4 z-[1000] flex gap-1">
-      {styles.map((s) => (
-        <button
-          key={s.key}
-          onClick={() => onChange(s.key)}
-          className={`px-2.5 py-1.5 text-xs font-medium rounded-lg backdrop-blur-xl transition-all duration-200 ${
-            style === s.key
-              ? "bg-primary text-white shadow-lg shadow-primary/30"
-              : "glass-strong text-text-secondary hover:text-text hover:bg-white/[0.08]"
-          }`}
+    <>
+      {/* Desktop: row of buttons */}
+      <div className="absolute top-4 right-4 z-[1000] gap-1 hidden sm:flex">
+        {styles.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => onChange(s.key)}
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-lg backdrop-blur-xl transition-all duration-200 ${
+              style === s.key
+                ? "bg-primary text-white shadow-lg shadow-primary/30"
+                : "glass-strong text-text-secondary hover:text-text hover:bg-white/[0.08]"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+      {/* Mobile: dropdown select */}
+      <div className="absolute top-4 right-4 z-[1000] sm:hidden">
+        <select
+          value={style}
+          onChange={(e) => onChange(e.target.value as TileStyle)}
+          className="glass-strong text-xs font-medium rounded-lg px-2.5 py-1.5 text-text-secondary backdrop-blur-xl border-0 outline-none appearance-none cursor-pointer"
+          aria-label="Map style"
         >
-          {s.label}
-        </button>
-      ))}
-    </div>
+          {styles.map((s) => (
+            <option key={s.key} value={s.key} className="bg-surface text-text">
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </>
   );
 }
 

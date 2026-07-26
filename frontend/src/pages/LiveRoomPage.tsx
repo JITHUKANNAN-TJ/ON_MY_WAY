@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { LiveMap } from "@/components/map/LiveMap";
 import { MemberList } from "@/components/room/MemberList";
@@ -89,6 +89,15 @@ export function LiveRoomPage() {
 
   const myMember = members.find((m) => m.id === myId);
 
+  const connectionDotClass = useMemo(() => {
+    switch (connectionState) {
+      case ConnectionState.CONNECTED: return "bg-primary animate-ping-slow";
+      case ConnectionState.CONNECTING: return "bg-secondary";
+      case ConnectionState.RECONNECTING: return "bg-warning animate-pulse";
+      default: return "bg-danger";
+    }
+  }, [connectionState]);
+
   const handleToggleFullscreen = useCallback(() => {
     setMapFullscreen((prev) => !prev);
   }, []);
@@ -109,7 +118,7 @@ export function LiveRoomPage() {
 
   if (connectionState === ConnectionState.CONNECTING || connectionState === ConnectionState.DISCONNECTED) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center pt-16">
+      <div className="h-screen w-full flex items-center justify-center pt-16">
         <div className="text-center space-y-4 animate-fade-in">
           <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto ring-1 ring-primary/20">
             <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -124,19 +133,25 @@ export function LiveRoomPage() {
   }
 
   return (
-    <div className={`h-screen w-screen flex flex-col ${mapFullscreen ? "pt-0" : "pt-16"}`}>
+    <div className={`h-screen w-full flex flex-col ${mapFullscreen ? "pt-0" : "pt-16"} overflow-hidden`}>
       {/* Top bar */}
       {!mapFullscreen && (
       <div className="glass-strong border-b border-white/[0.04] px-4 py-2.5 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           {room && <RoomInfo room={room} />}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <ConnectionBanner state={connectionState} latency={latency} />
-          <PingBadge latency={latency} />
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <div className="hidden sm:flex items-center gap-2">
+            <ConnectionBanner state={connectionState} latency={latency} />
+            <PingBadge latency={latency} />
+          </div>
+          {/* Compact connection dot on mobile */}
+          <div className="flex sm:hidden items-center">
+            <span className={`w-2 h-2 rounded-full ${connectionDotClass}`} />
+          </div>
           <button
             onClick={() => { setChatOpen(false); setSidebarOpen(!sidebarOpen); }}
-            className="btn-ghost p-2 lg:hidden"
+            className="btn-ghost p-2.5 lg:hidden"
             aria-label="Toggle sidebar"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -145,7 +160,7 @@ export function LiveRoomPage() {
           </button>
           <button
             onClick={() => { setSidebarOpen(true); setChatOpen((c) => !c); }}
-            className={`btn-ghost p-2 relative ${chatOpen ? "text-primary" : ""}`}
+            className={`btn-ghost p-2.5 relative ${chatOpen ? "text-primary" : ""}`}
             aria-label="Toggle chat"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -162,7 +177,7 @@ export function LiveRoomPage() {
       )}
 
       {/* Main area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Map */}
         <div className="flex-1 relative">
           <LiveMap
@@ -201,7 +216,7 @@ export function LiveRoomPage() {
         <div
           className={`${mapFullscreen ? "hidden" : ""} ${
             sidebarOpen ? "translate-x-0" : "translate-x-full"
-          } lg:translate-x-0 fixed lg:relative right-0 top-16 bottom-0 w-80 glass-strong border-l border-white/[0.04] transition-transform duration-300 ease-out z-30`}
+          } lg:translate-x-0 absolute lg:relative right-0 top-0 bottom-0 w-80 glass-strong border-l border-white/[0.04] transition-transform duration-300 ease-out z-30`}
         >
           {/* Close button on mobile */}
           <div className="flex items-center justify-between p-4 pb-0 lg:hidden">
