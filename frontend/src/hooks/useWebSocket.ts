@@ -7,6 +7,7 @@ interface UseWebSocketOptions {
   sessionId: string;
   displayName: string;
   enabled: boolean;
+  isBackgrounded: boolean;
   onMessage: (type: string, payload: Record<string, unknown>) => void;
 }
 
@@ -15,6 +16,7 @@ export function useWebSocket({
   sessionId,
   displayName,
   enabled,
+  isBackgrounded,
   onMessage,
 }: UseWebSocketOptions) {
   const [connectionState, setConnectionState] = useState<ConnectionState>(
@@ -70,6 +72,15 @@ export function useWebSocket({
       setConnectionState(ConnectionState.DISCONNECTED);
     };
   }, [enabled, roomCode, sessionId, displayName, handleMessage]);
+
+  useEffect(() => {
+    if (!enabled || !clientRef.current) return;
+    if (pingInterval.current) clearInterval(pingInterval.current);
+    const intervalMs = isBackgrounded ? 25000 : 10000;
+    pingInterval.current = setInterval(() => {
+      clientRef.current?.send("ping", { client_ts: Date.now() });
+    }, intervalMs);
+  }, [isBackgrounded, enabled]);
 
   const send = useCallback(
     (type: string, payload: Record<string, unknown> = {}) => {

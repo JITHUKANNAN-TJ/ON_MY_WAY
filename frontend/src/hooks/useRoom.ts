@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useGeolocation } from "./useGeolocation";
 import { useWebSocket } from "./useWebSocket";
 import {
@@ -44,6 +44,13 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
 
   const membersRef = useRef<Map<string, MemberData>>(new Map());
   const myIdRef = useRef<string | null>(null);
+  const [isBackgrounded, setIsBackgrounded] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setIsBackgrounded(document.hidden);
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, []);
 
   const updateState = useCallback(() => {
     setState((s) => ({ ...s, members: Array.from(membersRef.current.values()) }));
@@ -164,6 +171,7 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
     sessionId,
     displayName,
     enabled: true,
+    isBackgrounded,
     onMessage: handleWsMessage,
   });
 
@@ -210,8 +218,21 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
 
   const { error: gpsError } = useGeolocation({
     enabled: role !== MemberRole.VIEWER && connectionState === ConnectionState.CONNECTED,
+    isBackgrounded,
     onPosition: handleGeoPosition,
   });
+
+  const prevBkg = useRef(isBackgrounded);
+  useEffect(() => {
+    if (connectionState !== ConnectionState.CONNECTED || role === MemberRole.VIEWER) {
+      prevBkg.current = isBackgrounded;
+      return;
+    }
+    if (isBackgrounded && !prevBkg.current) {
+      sendWs("gps_lost");
+    }
+    prevBkg.current = isBackgrounded;
+  }, [isBackgrounded, connectionState, role, sendWs]);
 
   const leaveRoom = useCallback(() => {
     sendWs("leave_room");

@@ -11,13 +11,15 @@ export interface GeoPosition {
 
 interface UseGeolocationOptions {
   enabled: boolean;
+  isBackgrounded: boolean;
   onPosition: (pos: GeoPosition) => void;
 }
 
-export function useGeolocation({ enabled, onPosition }: UseGeolocationOptions) {
+export function useGeolocation({ enabled, isBackgrounded, onPosition }: UseGeolocationOptions) {
   const [error, setError] = useState<string | null>(null);
   const [permissionState, setPermissionState] = useState<PermissionState | "unavailable">("prompt");
   const watchId = useRef<number | null>(null);
+  const bgTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handlePosition = useCallback(
     (pos: GeolocationPosition) => {
@@ -43,12 +45,44 @@ export function useGeolocation({ enabled, onPosition }: UseGeolocationOptions) {
     setError(messages[err.code] || "GPS_ERROR");
   }, []);
 
+  const startWatch = useCallback(() => {
+    if (watchId.current !== null) return;
+    watchId.current = navigator.geolocation.watchPosition(handlePosition, handleError, {
+      enableHighAccuracy: true,
+      maximumAge: 3000,
+      timeout: 10000,
+    });
+  }, [handlePosition, handleError]);
+
+  const stopWatch = useCallback(() => {
+    if (watchId.current !== null) {
+      navigator.geolocation.clearWatch(watchId.current);
+      watchId.current = null;
+    }
+  }, []);
+
+  const startBgPoll = useCallback(() => {
+    if (bgTimer.current !== null) return;
+    bgTimer.current = setInterval(() => {
+      navigator.geolocation.getCurrentPosition(handlePosition, handleError, {
+        enableHighAccuracy: false,
+        maximumAge: 30000,
+        timeout: 15000,
+      });
+    }, 30000);
+  }, [handlePosition, handleError]);
+
+  const stopBgPoll = useCallback(() => {
+    if (bgTimer.current !== null) {
+      clearInterval(bgTimer.current);
+      bgTimer.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     if (!enabled) {
-      if (watchId.current !== null) {
-        navigator.geolocation.clearWatch(watchId.current);
-        watchId.current = null;
-      }
+      stopWatch();
+      stopBgPoll();
       return;
     }
 
@@ -63,18 +97,27 @@ export function useGeolocation({ enabled, onPosition }: UseGeolocationOptions) {
       status.addEventListener("change", () => setPermissionState(status.state));
     });
 
-    watchId.current = navigator.geolocation.watchPosition(handlePosition, handleError, {
-      enableHighAccuracy: true,
-      maximumAge: 3000,
-      timeout: 10000,
-    });
-
     return () => {
-      if (watchId.current !== null) {
-        navigator.geolocation.clearWatch(watchId.current);
-      }
+      stopWatch();
+      stopBgPoll();
     };
-  }, [enabled, handlePosition, handleError]);
+  }, [enabled, stopWatch, stopBgPoll]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (isBackgrounded) {
+      stopWatch();
+      startBgPoll();
+    } else {
+      stopBgPoll();
+      navigator.geolocation.getCurrentPosition(handlePosition, handleError, {
+        enableHighAccuracy: true,
+        maximumAge: 3000,
+        timeout: 10000,
+      });
+      startWatch();
+    }
+  }, [isBackgrounded, enabled, handlePosition, handleError, startWatch, stopWatch, startBgPoll, stopBgPoll]);
 
   return { error, permissionState };
 }
