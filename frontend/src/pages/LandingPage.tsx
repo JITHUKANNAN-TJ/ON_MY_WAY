@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import FloatingLines from "@/components/ui/FloatingLines";
 
 const features = [
   {
@@ -63,6 +64,17 @@ export function LandingPage() {
     <div className="min-h-screen">
       {/* Hero */}
       <section className="relative pt-36 pb-28 px-4 text-center overflow-hidden">
+        <div className="absolute inset-0">
+          <FloatingLines
+            enabledWaves={["bottom", "middle"]}
+            lineCount={[10, 15]}
+            lineDistance={[8, 6]}
+            bendRadius={5.0}
+            bendStrength={1.5}
+            animationSpeed={2.1}
+            linesGradient={["#20aadc", "#634040", "#ff0000"]}
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute top-1/3 right-1/4 w-4 h-4 rounded-full bg-primary/30 animate-float" />

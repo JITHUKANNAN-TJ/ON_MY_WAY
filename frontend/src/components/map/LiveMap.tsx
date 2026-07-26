@@ -132,6 +132,29 @@ function createMeetingPointIcon(): L.DivIcon {
   });
 }
 
+function createMidpointIcon(): L.DivIcon {
+  return L.divIcon({
+    html: `<div style="
+      width:32px;height:32px;
+      background:#8B5CF6;
+      border:3px solid #fff;
+      border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      box-shadow:0 0 20px #8B5CF680;
+    "><div style="
+      width:8px;height:8px;
+      background:#fff;
+      border-radius:50%;
+      position:absolute;
+      top:50%;left:50%;
+      transform:translate(-50%,-50%);
+    "></div></div>`,
+    className: "",
+    iconSize: [44, 44],
+    iconAnchor: [22, 44],
+  });
+}
+
 interface LiveMapProps {
   members: MemberData[];
   myId: string | null;
@@ -250,6 +273,21 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
     return map;
   }, [members]);
 
+  const hasMeetingPoint = room?.meeting_lat != null && room?.meeting_lng != null;
+
+  const midpoint = useMemo(() => {
+    if (hasMeetingPoint) return null;
+    const withLoc = members.filter((m) => m.location && !viewerIds.has(m.id));
+    if (withLoc.length < 2) return null;
+    const sumLat = withLoc.reduce((sum, m) => sum + m.location!.lat, 0);
+    const sumLng = withLoc.reduce((sum, m) => sum + m.location!.lng, 0);
+    return { lat: sumLat / withLoc.length, lng: sumLng / withLoc.length };
+  }, [hasMeetingPoint, members, viewerIds]);
+
+  const isMidpoint = !hasMeetingPoint && midpoint != null;
+  const effectiveMeetingLat = hasMeetingPoint ? room!.meeting_lat : (midpoint?.lat ?? null);
+  const effectiveMeetingLng = hasMeetingPoint ? room!.meeting_lng : (midpoint?.lng ?? null);
+
   const fetchRoadRoute = useCallback(async (fromLat: number, fromLng: number, toLat: number, toLng: number, routeKey: string) => {
     const now = Date.now();
     if (routeFetchTimers.current[routeKey] && now - routeFetchTimers.current[routeKey] < OSRM_CACHE_TTL) return;
@@ -287,16 +325,16 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
   }, [transportMode]);
 
   useEffect(() => {
-    if (room?.meeting_lat == null || room?.meeting_lng == null) return;
-    const meetingLat = room.meeting_lat;
-    const meetingLng = room.meeting_lng;
+    const mLat = effectiveMeetingLat;
+    const mLng = effectiveMeetingLng;
+    if (mLat == null || mLng == null) return;
     members
       .filter((m) => m.location && !viewerIds.has(m.id))
       .forEach((m) => {
         const routeKey = `route-${m.id}`;
-        fetchRoadRoute(m.location!.lat, m.location!.lng, meetingLat, meetingLng, routeKey);
+        fetchRoadRoute(m.location!.lat, m.location!.lng, mLat, mLng, routeKey);
       });
-  }, [members, room?.meeting_lat, room?.meeting_lng, viewerIds, fetchRoadRoute]);
+  }, [members, effectiveMeetingLat, effectiveMeetingLng, viewerIds, fetchRoadRoute]);
 
   return (
     <div className="relative w-full h-full">
@@ -330,8 +368,8 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
             );
           })}
 
-        {/* Route lines to meeting point — straight line fallback + road route overlay */}
-        {room?.meeting_lat != null && room?.meeting_lng != null && (
+        {/* Route lines to meeting point/midpoint — straight line fallback + road route overlay */}
+        {effectiveMeetingLat != null && effectiveMeetingLng != null && (
           members
             .filter((m) => m.location && !viewerIds.has(m.id))
             .map((m) => {
@@ -344,7 +382,7 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
                   <Polyline
                     positions={[
                       [m.location!.lat, m.location!.lng],
-                      [room.meeting_lat!, room.meeting_lng!],
+                      [effectiveMeetingLat!, effectiveMeetingLng!],
                     ]}
                     pathOptions={{
                       color,
@@ -369,7 +407,7 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
         )}
 
         {/* Meeting Point */}
-        {room?.meeting_lat != null && room?.meeting_lng != null && (
+        {hasMeetingPoint && room?.meeting_lat != null && room?.meeting_lng != null && (
           <Marker
             position={[room.meeting_lat, room.meeting_lng]}
             icon={createMeetingPointIcon()}
@@ -378,6 +416,19 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
               <div className="text-sm font-medium">
                 {room.meeting_point || "Meeting Point"}
               </div>
+            </Popup>
+          </Marker>
+        )}
+
+        {/* Suggested Midpoint (auto-calculated between members) */}
+        {isMidpoint && midpoint && (
+          <Marker
+            position={[midpoint.lat, midpoint.lng]}
+            icon={createMidpointIcon()}
+          >
+            <Popup>
+              <div className="text-sm font-medium">Suggested Midpoint</div>
+              <div className="text-xs text-text-secondary">Midpoint between all members</div>
             </Popup>
           </Marker>
         )}
@@ -403,10 +454,10 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
                         {isSelf && " (You)"}
                       </div>
                       {(() => {
-                        const roadRoute = roadRoutes[`route-${m.id}`];
-                        const showRoad = roadRoute && room?.meeting_lat != null;
-                        const dist = showRoad ? roadRoute.distanceKm : m.distance_km;
-                        const eta = showRoad ? roadRoute.etaMin : m.eta_min;
+                          const roadRoute = roadRoutes[`route-${m.id}`];
+                          const showRoad = roadRoute && effectiveMeetingLat != null;
+                          const dist = showRoad ? roadRoute.distanceKm : m.distance_km;
+                          const eta = showRoad ? roadRoute.etaMin : m.eta_min;
                         if (dist === undefined) return null;
                         return (
                           <div className="text-text-secondary">
