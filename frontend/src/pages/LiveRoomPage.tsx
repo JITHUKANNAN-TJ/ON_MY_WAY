@@ -12,6 +12,7 @@ import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { useRoom } from "@/hooks/useRoom";
+import { useProximityAlert } from "@/hooks/useProximityAlert";
 import { api } from "@/services/api";
 import { MemberRole, ConnectionState, TransportMode } from "@/types";
 
@@ -91,6 +92,8 @@ export function LiveRoomPage() {
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
   }, [code]);
+
+  useProximityAlert(members, myId);
 
   const myMember = members.find((m) => m.id === myId);
 

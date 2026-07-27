@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { ToastContainer } from "@/components/ui/ToastContainer";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { LandingPage } from "@/pages/LandingPage";
 import { CreateRoomPage } from "@/pages/CreateRoomPage";
@@ -10,6 +11,7 @@ import { LiveRoomPage } from "@/pages/LiveRoomPage";
 export default function App() {
   return (
     <BrowserRouter>
+      <ToastContainer />
       <InstallPrompt />
       <Routes>
         <Route
