@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useGeolocation } from "./useGeolocation";
 import { useWebSocket } from "./useWebSocket";
+import { useWakeLock } from "./useWakeLock";
+import { useBeacon } from "./useBeacon";
 import {
   ChatMessage,
   ConnectionState,
@@ -48,10 +50,21 @@ export function useRoom({ roomCode, sessionId, displayName, role, onRoomEnded }:
   const [isBackgrounded, setIsBackgrounded] = useState(false);
 
   useEffect(() => {
-    const handler = () => setIsBackgrounded(document.hidden);
-    document.addEventListener("visibilitychange", handler);
-    return () => document.removeEventListener("visibilitychange", handler);
+    const onVisibility = () => setIsBackgrounded(document.hidden);
+    const onFreeze = () => setIsBackgrounded(true);
+    const onResume = () => setIsBackgrounded(false);
+    document.addEventListener("visibilitychange", onVisibility);
+    document.addEventListener("freeze", onFreeze);
+    document.addEventListener("resume", onResume);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      document.removeEventListener("freeze", onFreeze);
+      document.removeEventListener("resume", onResume);
+    };
   }, []);
+
+  const { requestWakeLock, releaseWakeLock } = useWakeLock();
+  const { setLastPosition } = useBeacon(roomCode, sessionId);
 
   const updateState = useCallback(() => {
     setState((s) => ({ ...s, members: Array.from(membersRef.current.values()) }));
@@ -181,6 +194,8 @@ export function useRoom({ roomCode, sessionId, displayName, role, onRoomEnded }:
     (pos: { lat: number; lng: number; speed: number | null; heading: number | null; accuracy: number | null; timestamp: number }) => {
       if (role === MemberRole.VIEWER) return;
 
+      setLastPosition(pos);
+
       sendWs("location_update", {
         lat: pos.lat,
         lng: pos.lng,
@@ -224,17 +239,31 @@ export function useRoom({ roomCode, sessionId, displayName, role, onRoomEnded }:
     onPosition: handleGeoPosition,
   });
 
+  const prevConnectionRef = useRef(ConnectionState.DISCONNECTED);
   const prevBkg = useRef(isBackgrounded);
   useEffect(() => {
+    const prevConn = prevConnectionRef.current;
+    prevConnectionRef.current = connectionState;
+
+    if (connectionState === ConnectionState.CONNECTED && role !== MemberRole.VIEWER) {
+      requestWakeLock();
+    }
+    if (prevConn === ConnectionState.CONNECTED && connectionState !== ConnectionState.CONNECTED) {
+      releaseWakeLock();
+    }
+
     if (connectionState !== ConnectionState.CONNECTED || role === MemberRole.VIEWER) {
       prevBkg.current = isBackgrounded;
       return;
     }
     if (isBackgrounded && !prevBkg.current) {
       sendWs("gps_lost");
+    } else if (!isBackgrounded && prevBkg.current) {
+      sendWs("gps_restored");
+      requestWakeLock();
     }
     prevBkg.current = isBackgrounded;
-  }, [isBackgrounded, connectionState, role, sendWs]);
+  }, [isBackgrounded, connectionState, role, sendWs, requestWakeLock, releaseWakeLock]);
 
   const leaveRoom = useCallback(() => {
     sendWs("leave_room");

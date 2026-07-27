@@ -12,6 +12,7 @@ from app.ws.handlers import handle_connection
 from app.ws.manager import manager
 from app.api.rooms import router as rooms_router
 from app.api.members import router as members_router
+from app.api.location import router as location_router
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ app.add_middleware(
 
 app.include_router(rooms_router)
 app.include_router(members_router)
+app.include_router(location_router)
 
 
 @app.get("/api/health")

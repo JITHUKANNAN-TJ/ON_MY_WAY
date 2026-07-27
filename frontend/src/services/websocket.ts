@@ -14,6 +14,8 @@ export class WsClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private maxRetries = 10;
   private retries = 0;
+  private pendingQueue: Array<{ type: string; payload: Record<string, unknown> }> = [];
+  private readonly MAX_QUEUE = 100;
 
   constructor(
     roomCode: string,
@@ -39,6 +41,7 @@ export class WsClient {
 
     this.ws.onopen = () => {
       this.retries = 0;
+      this.flushQueue();
       this.onOpen?.();
     };
 
@@ -73,6 +76,21 @@ export class WsClient {
   send(type: string, payload: Record<string, unknown> = {}) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ version: WS_VERSION, type, payload }));
+    } else {
+      if (this.pendingQueue.length < this.MAX_QUEUE) {
+        this.pendingQueue.push({ type, payload });
+      }
+    }
+  }
+
+  private flushQueue() {
+    if (this.pendingQueue.length === 0) return;
+    const queue = this.pendingQueue;
+    this.pendingQueue = [];
+    for (const msg of queue) {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ version: WS_VERSION, type: msg.type, payload: msg.payload }));
+      }
     }
   }
 

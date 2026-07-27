@@ -103,6 +103,22 @@ export function useGeolocation({ enabled, isBackgrounded, onPosition }: UseGeolo
     };
   }, [enabled, stopWatch, stopBgPoll]);
 
+  const retryGetPosition = useCallback((retries = 3, delay = 0) => {
+    setTimeout(() => {
+      navigator.geolocation.getCurrentPosition(handlePosition, (err) => {
+        if (retries > 0) {
+          retryGetPosition(retries - 1, Math.min((delay || 1000) * 2, 5000));
+        } else {
+          handleError(err);
+        }
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 8000,
+      });
+    }, delay);
+  }, [handlePosition, handleError]);
+
   useEffect(() => {
     if (!enabled) return;
     if (isBackgrounded) {
@@ -110,14 +126,10 @@ export function useGeolocation({ enabled, isBackgrounded, onPosition }: UseGeolo
       startBgPoll();
     } else {
       stopBgPoll();
-      navigator.geolocation.getCurrentPosition(handlePosition, handleError, {
-        enableHighAccuracy: true,
-        maximumAge: 3000,
-        timeout: 10000,
-      });
+      retryGetPosition();
       startWatch();
     }
-  }, [isBackgrounded, enabled, handlePosition, handleError, startWatch, stopWatch, startBgPoll, stopBgPoll]);
+  }, [isBackgrounded, enabled, handlePosition, handleError, startWatch, stopWatch, startBgPoll, stopBgPoll, retryGetPosition]);
 
   return { error, permissionState };
 }

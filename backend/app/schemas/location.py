@@ -11,6 +11,24 @@ class LocationData(BaseModel):
     accuracy: float | None = None
     timestamp: float | None = None
 
+class LocationUpdateRequest(BaseModel):
+    lat: float
+    lng: float
+    speed: float | None = None
+    heading: float | None = None
+    accuracy: float | None = None
+    timestamp: float
+    session_id: str
+
+
+class LocationData(BaseModel):
+    latitude: float
+    longitude: float
+    speed: float | None = None
+    heading: float | None = None
+    accuracy: float | None = None
+    timestamp: float | None = None
+
     @property
     def dt(self) -> datetime:
         if self.timestamp:
