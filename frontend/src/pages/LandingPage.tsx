@@ -63,7 +63,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative pt-36 pb-28 px-4 text-center overflow-hidden">
+      <section className="relative pt-24 sm:pt-36 pb-20 sm:pb-28 px-4 text-center overflow-hidden">
         <div className="absolute inset-0">
           <FloatingLines
             enabledWaves={["bottom", "middle"]}
@@ -202,7 +202,7 @@ export function LandingPage() {
         <div className="max-w-2xl mx-auto">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-surface to-secondary/5 p-1">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5" />
-            <div className="relative glass-strong rounded-[23px] p-10 sm:p-14 text-center space-y-6">
+            <div className="relative glass-strong rounded-[23px] p-6 sm:p-10 sm:p-14 text-center space-y-6">
               <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl" />
               <div className="absolute bottom-0 left-0 w-40 h-40 bg-secondary/5 rounded-full blur-3xl" />
               <div className="relative">

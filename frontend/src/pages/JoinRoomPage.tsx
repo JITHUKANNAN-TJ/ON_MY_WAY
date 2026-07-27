@@ -83,10 +83,10 @@ export function JoinRoomPage() {
   };
 
   return (
-    <div className="min-h-screen pt-28 pb-16 px-4 flex items-start justify-center">
+    <div className="min-h-screen pt-20 sm:pt-28 pb-16 px-4 flex items-start justify-center">
       <div className="w-full max-w-md animate-fade-in">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold mb-3">Join a Room</h1>
+        <div className="text-center mb-8 sm:mb-10">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2 sm:mb-3">Join a Room</h1>
           <p className="text-text-secondary">
             Enter the room code or paste a share link.
           </p>

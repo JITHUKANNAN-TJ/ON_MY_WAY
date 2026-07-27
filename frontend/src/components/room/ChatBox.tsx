@@ -75,21 +75,21 @@ export function ChatBox({ messages, myId, onSend }: ChatBoxProps) {
         })}
       </div>
 
-      <form onSubmit={handleSend} className="flex gap-2 pt-3">
+      <form onSubmit={handleSend} className="flex gap-2 pt-3 pb-1">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
           maxLength={500}
-          className="input-field flex-1 text-sm"
+          className="input-field flex-1 text-sm min-h-[44px]"
         />
         <Button
           type="submit"
           size="sm"
           disabled={!input.trim()}
-          className="shrink-0"
+          className="shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
           </svg>
         </Button>

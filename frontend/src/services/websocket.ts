@@ -1,6 +1,6 @@
 import { WS_VERSION } from "@/types";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "";
+const WS_URL = import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL?.replace(/^http/, "ws") || "ws://localhost:8000";
 
 export type WsMessageHandler = (data: { type: string; payload: Record<string, unknown> }) => void;
 

@@ -84,7 +84,7 @@ async def join_room(db: AsyncSession, req: JoinRoomRequest) -> tuple[Room, Membe
 
 
 async def get_room_by_code(db: AsyncSession, code: str) -> Room | None:
-    result = await db.execute(select(Room).where(Room.code == code))
+    result = await db.execute(select(Room).where(Room.code == code.upper()))
     return result.scalar_one_or_none()
 
 

@@ -9,6 +9,7 @@ from app.models.room import Room
 from app.schemas.room import (
     CreateRoomRequest,
     CreateRoomResponse,
+    EndRoomRequest,
     JoinRoomRequest,
     JoinRoomResponse,
     RoomInfoResponse,
@@ -80,14 +81,14 @@ async def get_members(code: str, db: AsyncSession = Depends(get_session)) -> lis
 
 @router.delete("/{code}")
 async def end_room(
-    code: str, session_id: str, db: AsyncSession = Depends(get_session)
+    code: str, req: EndRoomRequest, db: AsyncSession = Depends(get_session)
 ) -> dict:
     from app.services.room_service import end_room as end_room_svc
 
     room = await get_room_by_code(db, code)
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
-    success = await end_room_svc(db, room.id, session_id)
+    success = await end_room_svc(db, room.id, req.session_id)
     if not success:
         raise HTTPException(status_code=403, detail="Only the host can end the room")
 

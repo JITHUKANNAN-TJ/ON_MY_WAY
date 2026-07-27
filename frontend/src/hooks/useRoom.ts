@@ -15,6 +15,7 @@ interface UseRoomOptions {
   sessionId: string;
   displayName: string;
   role: MemberRole;
+  onRoomEnded?: () => void;
 }
 
 interface RoomState {
@@ -29,7 +30,7 @@ interface RoomState {
   chatMessages: ChatMessage[];
 }
 
-export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptions) {
+export function useRoom({ roomCode, sessionId, displayName, role, onRoomEnded }: UseRoomOptions) {
   const [state, setState] = useState<RoomState>({
     room: null,
     members: [],
@@ -149,7 +150,8 @@ export function useRoom({ roomCode, sessionId, displayName, role }: UseRoomOptio
         }
 
         case "room_ended": {
-          setState((s) => ({ ...s, room: s.room ? { ...s.room, meeting_point: null, meeting_lat: null, meeting_lng: null } : null }));
+          setState((s) => ({ ...s, room: null }));
+          onRoomEnded?.();
           break;
         }
 

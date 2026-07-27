@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class CreateRoomRequest(BaseModel):
@@ -26,6 +26,11 @@ class JoinRoomRequest(BaseModel):
     role: str = Field(default="MEMBER", pattern="^(MEMBER|VIEWER)$")
     session_id: str | None = None
 
+    @field_validator("room_code")
+    @classmethod
+    def normalize_room_code(cls, v: str) -> str:
+        return v.upper()
+
 
 class JoinRoomResponse(BaseModel):
     room_id: uuid.UUID
@@ -36,6 +41,14 @@ class JoinRoomResponse(BaseModel):
     meeting_point: str | None = None
     meeting_lat: float | None = None
     meeting_lng: float | None = None
+
+
+class EndRoomRequest(BaseModel):
+    session_id: str
+
+
+class RemoveMemberRequest(BaseModel):
+    session_id: str
 
 
 class RoomInfoResponse(BaseModel):

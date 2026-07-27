@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 async function request<T>(
   path: string,
@@ -79,15 +79,16 @@ export const api = {
   },
 
   endRoom(code: string, sessionId: string) {
-    return request<{ message: string }>(`/api/rooms/${code}?session_id=${sessionId}`, {
+    return request<{ message: string }>(`/api/rooms/${code}`, {
       method: "DELETE",
+      body: JSON.stringify({ session_id: sessionId }),
     });
   },
 
   removeMember(code: string, memberId: string, sessionId: string) {
     return request<{ message: string }>(
-      `/api/rooms/${code}/members/${memberId}?session_id=${sessionId}`,
-      { method: "DELETE" }
+      `/api/rooms/${code}/members/${memberId}`,
+      { method: "DELETE", body: JSON.stringify({ session_id: sessionId }) }
     );
   },
 };

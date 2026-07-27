@@ -42,7 +42,7 @@ function getStoredTileStyle(): TileStyle {
 }
 
 function createMemberIcon(color: string, isSelf: boolean): L.DivIcon {
-  const size = isSelf ? 20 : 16;
+  const size = isSelf ? 28 : 24;
   const border = isSelf ? "3px solid #fff" : "2px solid rgba(255,255,255,0.5)";
   const hitArea = 16;
   return L.divIcon({
@@ -73,30 +73,30 @@ function createTransportIcon(mode: TransportMode, busSpriteUrl?: string): L.DivI
   if (mode === "bus" && busSpriteUrl) {
     return L.divIcon({
       html: `<div style="
-        width:40px;height:40px;
+        width:52px;height:52px;
         background:url('${busSpriteUrl}') no-repeat center/contain;
         filter:drop-shadow(0 3px 4px rgba(0,0,0,0.4));
       "></div>`,
       className: "",
-      iconSize: [44, 44],
-      iconAnchor: [22, 22],
+      iconSize: [56, 56],
+      iconAnchor: [28, 28],
     });
   }
 
   const emoji = TRANSPORT_ICONS[mode] || "📍";
-  const size = mode === "bus" || mode === "train" ? 32 : mode === "car" || mode === "bike" ? 28 : 24;
+  const size = mode === "bus" || mode === "train" ? 42 : mode === "car" || mode === "bike" ? 38 : 32;
 
   return L.divIcon({
     html: `<div style="
-      width:44px;height:44px;
+      width:56px;height:56px;
       display:flex;align-items:center;justify-content:center;
       font-size:${size}px;
       line-height:1;
-      filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+      filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4));
     ">${emoji}</div>`,
     className: "",
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
+    iconSize: [56, 56],
+    iconAnchor: [28, 28],
   });
 }
 
@@ -112,14 +112,14 @@ function getMemberColor(index: number): string {
 function createMeetingPointIcon(): L.DivIcon {
   return L.divIcon({
     html: `<div style="
-      width:32px;height:32px;
+      width:44px;height:44px;
       background:#EF4444;
       border:3px solid #fff;
       border-radius:50% 50% 50% 0;
       transform:rotate(-45deg);
-      box-shadow:0 0 20px #EF444480;
+      box-shadow:0 0 24px #EF444480;
     "><div style="
-      width:8px;height:8px;
+      width:12px;height:12px;
       background:#fff;
       border-radius:50%;
       position:absolute;
@@ -127,22 +127,22 @@ function createMeetingPointIcon(): L.DivIcon {
       transform:translate(-50%,-50%);
     "></div></div>`,
     className: "",
-    iconSize: [44, 44],
-    iconAnchor: [22, 44],
+    iconSize: [56, 56],
+    iconAnchor: [28, 56],
   });
 }
 
 function createMidpointIcon(): L.DivIcon {
   return L.divIcon({
     html: `<div style="
-      width:32px;height:32px;
+      width:44px;height:44px;
       background:#8B5CF6;
       border:3px solid #fff;
       border-radius:50% 50% 50% 0;
       transform:rotate(-45deg);
-      box-shadow:0 0 20px #8B5CF680;
+      box-shadow:0 0 24px #8B5CF680;
     "><div style="
-      width:8px;height:8px;
+      width:12px;height:12px;
       background:#fff;
       border-radius:50%;
       position:absolute;
@@ -150,8 +150,8 @@ function createMidpointIcon(): L.DivIcon {
       transform:translate(-50%,-50%);
     "></div></div>`,
     className: "",
-    iconSize: [44, 44],
-    iconAnchor: [22, 44],
+    iconSize: [56, 56],
+    iconAnchor: [28, 56],
   });
 }
 
@@ -167,9 +167,22 @@ interface LiveMapProps {
 
 function MapController({ members, myId }: { members: MemberData[]; myId: string | null }) {
   const map = useMap();
-  const prevBounds = useRef<string | null>(null);
+  const hasInteracted = useRef(false);
+  const hasFitted = useRef(false);
 
   useEffect(() => {
+    const onStart = () => { hasInteracted.current = true; };
+    map.on("zoomstart", onStart);
+    map.on("dragstart", onStart);
+    return () => {
+      map.off("zoomstart", onStart);
+      map.off("dragstart", onStart);
+    };
+  }, [map]);
+
+  useEffect(() => {
+    if (hasInteracted.current) return;
+
     const withLoc = members.filter(
       (m) => m.location && m.id !== myId
     );
@@ -183,15 +196,29 @@ function MapController({ members, myId }: { members: MemberData[]; myId: string 
 
     if (points.length > 0) {
       const bounds = L.latLngBounds(points);
-      const key = bounds.toBBoxString();
-      if (key !== prevBounds.current) {
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: true });
-        prevBounds.current = key;
-      }
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: !hasFitted.current });
+      hasFitted.current = true;
     }
   }, [members, myId, map]);
 
   return null;
+}
+
+function RecenterButton({ members, myId, onClick }: { members: MemberData[]; myId: string | null; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="absolute bottom-20 left-1/2 -translate-x-1/2 z-[1000] px-4 py-2 rounded-xl glass-strong text-xs font-medium backdrop-blur-xl shadow-lg animate-fade-in"
+      aria-label="Re-center map"
+    >
+      <span className="flex items-center gap-2">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+        </svg>
+        Re-center
+      </span>
+    </button>
+  );
 }
 
 function TileLayerSwitcher({ style, onChange }: { style: TileStyle; onChange: (s: TileStyle) => void }) {
@@ -204,7 +231,7 @@ function TileLayerSwitcher({ style, onChange }: { style: TileStyle; onChange: (s
   return (
     <>
       {/* Desktop: row of buttons */}
-      <div className="absolute top-4 right-4 z-[1000] gap-1 hidden sm:flex">
+      <div className="absolute top-4 sm:top-4 right-4 z-[1000] gap-1 hidden sm:flex">
         {styles.map((s) => (
           <button
             key={s.key}
@@ -220,7 +247,7 @@ function TileLayerSwitcher({ style, onChange }: { style: TileStyle; onChange: (s
         ))}
       </div>
       {/* Mobile: dropdown select */}
-      <div className="absolute top-4 right-4 z-[1000] sm:hidden">
+      <div className="absolute top-2 right-2 z-[1000] sm:hidden">
         <select
           value={style}
           onChange={(e) => onChange(e.target.value as TileStyle)}
@@ -249,6 +276,7 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
   const [tileStyle, setTileStyle] = useState<TileStyle>(getStoredTileStyle);
   const [roadRoutes, setRoadRoutes] = useState<Record<string, RoadRoute>>({});
   const [busSprite, setBusSprite] = useState<string | null>(null);
+  const [recenterKey, setRecenterKey] = useState(0);
   const routeFetchTimers = useRef<Record<string, number>>({});
 
   useEffect(() => {
@@ -347,7 +375,7 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
       >
         <TileLayer url={tileLayer.url} attribution="" />
 
-        <MapController members={members} myId={myId} />
+        <MapController key={recenterKey} members={members} myId={myId} />
 
         {/* Trails */}
         {members
@@ -499,6 +527,9 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
           })}
       </MapContainer>
 
+      {/* Re-center button */}
+      <RecenterButton members={members} myId={myId} onClick={() => setRecenterKey((k) => k + 1)} />
+
       {/* Tile layer switcher */}
       <TileLayerSwitcher style={tileStyle} onChange={handleTileStyleChange} />
 
@@ -506,7 +537,7 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
       {onToggleFullscreen && (
         <button
           onClick={onToggleFullscreen}
-          className="absolute top-4 left-4 z-[1000] p-2 rounded-lg glass-strong text-text-secondary hover:text-text hover:bg-white/[0.08] transition-all duration-200"
+          className="absolute top-2 sm:top-4 left-2 sm:left-4 z-[1000] p-2 rounded-lg glass-strong text-text-secondary hover:text-text hover:bg-white/[0.08] transition-all duration-200"
           aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
         >
           {isFullscreen ? (
@@ -522,7 +553,7 @@ export function LiveMap({ members, myId, room, transportMode, onTransportModeCha
       )}
 
       {/* Transport mode selector */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] flex gap-1 bg-surface/80 backdrop-blur-xl rounded-xl p-1 ring-1 ring-white/[0.08] shadow-2xl">
+      <div className="absolute bottom-4 sm:bottom-4 left-1/2 -translate-x-1/2 z-[1000] flex gap-1 bg-surface/80 backdrop-blur-xl rounded-xl p-1 ring-1 ring-white/[0.08] shadow-2xl">
         {TRANSPORT_MODES.map((m) => (
           <button
             key={m.key}
